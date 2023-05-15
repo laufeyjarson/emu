@@ -1,0 +1,127 @@
+File Formats:
+
+The system memory image files are stored in three possible formats:
+
+.BIN -	a raw binary image.
+.MEM -	a parsed image, with start and end locations
+		embedded in the file
+.STT -	a complete system status with registers and all 64K.
+
+The user will have the chance to load a file into the existing memory state
+or to clear memory and registers before continuing.  On load, an error in a
+file will allow the user to continue with what was read, or to abort the
+load.  On save, an error will offer to delete a partial save file.
+In the file, blanks may be spaces or tabs.
+
+
+The .BIN file:
+
+The .BIN file is read in directly as raw data, it can be any bytes.  No
+particular format exists for this file, and any file that can't be identified
+by the system's guesser is considered to be a .BIN file. (yes, you can load
+PC .exe files and things into memory).  The user is prompted where to load
+a .BIN file into memory at load time, or where start and stop at a new save.
+Note that a .BIN file that is exactly 64K will be loaded with no questions
+asked (assuming a 0000 start and FFFF end) and a .BIN file that is more than
+64K will be truncated with a warning.
+
+
+The .MEM file:
+
+This file must have the first line "[Apple // Emulator MEM Memory Image File]"
+and then there may be blanks or other data lines. 
+
+The next keyword should be "Starting at:", followed by zero to many spaces,
+and a hex digit that is the location to load into memory.
+
+Following this, there will then be "Length:", followed by one or many spaces,
+and a hex digit that is the number of bytes encoded in the file.
+
+Notice that in a .STT file (see below) there would be a "registers" section
+here.  If there is one found an a .MEM file, it is completely ignored.
+(this allows the emulator to store a register section in a mem file in future
+versions, but not require it.)
+
+Then, there will be a line containing "Begin data:".
+
+Following this, there will be lines of up to 32 bytes in hex.  All hex
+digits are two characters wide, and blanks are allowed between digits,
+but not between nibbles.  Blank lines are allowed.  No blanks are required,
+but the emulator will insert a blank every 4 bytes, and a blank line
+every 1k, for readability.
+
+After the data lines, there will be an "End data." line.
+This is to insure no truncation of files.  User comments may go after the
+end data statement.  If there is not enough bytes between data lines, or
+no end data statement, the emulator will warn the user that this file may
+be corrupt, but continue with what it got.
+
+A sample .MEM file follows:
+[Apple // Emulator MEM Memory Image File]
+
+Starting at: 0000
+Length: 80
+
+Begin data:
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+End data.
+
+
+The .STT file
+
+The .STT file will be similar.  There is no required starting
+or length line, but there is a registers section.  A starting and length line
+are acceptable, assumung the start is 0x0000 and the length is 0xFFFF - any
+other values will cause a file read error.
+
+The first line of a .STT file is "[Apple // Emulator STT System Status File]"
+After it, blank lines are allowed.
+
+Then, the registers will be stored.  All registers will be cleared to zero on
+load, and any enumerated in the file will be changed from zero, so zero
+registers need not be written, but they may be with no error.  Registers
+will be bordered by a "Begin registers:" and an "End registers." statement.
+There is one line per register in the file, including all the meta-registers.
+Valid registers are: "Program Counter:", "Accumulator", "X-Register:",
+"Y-Register:", "Flags:", "Stack Pointer:", "System Halted:", and "Tick Count:".
+Each register will have a hex value - this value will be loaded.  On load,
+unknown registers will be ignored.  If there is no "Begin registers:" or
+"End registers." line, an error will be generated.  Blank lines are allowed.
+Blanks between the trailing colon and the start of the hex number are allowed.
+
+There will then be a data section as in a .MEM file.
+
+Anything after the data section is ignored, and can be used for user comments.
+
+A sample .STT file, abbreviated so a not to be 64K worth of data:
+[Apple // Emulator STT System Status File]
+
+Begin registers:
+Program Counter: 4CF2
+Accumulator: D4
+X-Register: 3F
+Flags: 84
+Stack Pointer: 38
+System Halted: 3
+Tick Count: BD4FF
+End registers.
+
+Begin data:
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+...
+...
+...
+There will be bunches more of these data lines
+...
+...
+...
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+End data.
+
+Notice that the file contains no Y-Register, so it must be zero.
+

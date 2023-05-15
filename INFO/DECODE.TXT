@@ -1,0 +1,98 @@
+Here's all the opcodes that start with bits 101
+
+LDA	imm		a9	101 010 01
+LDA	zp		a5	101 001 01
+LDA	zp,x	b5	101 101 01
+LDA	abs		ad	101 011 01
+LDA	abs,x	bd	101 111 01
+LDA	abs,y	b9	101 110 01
+LDA	(zp,x)	a1	101 000 01
+LDA	(zp),y	b1	101 100 01
+
+LDX	imm		a2	101 000 10
+LDX	zp		a6	101 001 10
+LDX	zp,y	b6	101 101 10
+LDX	abs		ae	101 011 10
+LDX	abs,y	be	101 111 10
+TSX			ba	101 110 10	
+
+LDY	imm		a0	101 000 00
+LDY	zp		a4	101 001 00
+LDY	zp,x	b4	101 101 00
+LDY abs		ac	101 011 00
+LDY abs,x	bc	101 111 00
+BCS	disp	b0	101 100 00	
+CLV			b8	101 110 00	
+
+Here's all the ones that start with 001
+
+JSR	label	20	001 000 00
+PLP			28	001 010 00
+BMI	disp	30	001 100 00
+SEC			38	001 110 00
+
+BIT	zp		24	001 001 00
+BIT abs		2c	001 011 00
+
+
+AND	abs		2d	001 011 01
+AND	imm		29	001 010 01
+AND	(zp,x)	21	001 000 01
+AND	zp		25	001 001 01
+AND	(zp),y	31	001 100 01
+AND	zp,x	35	001 101 01
+AND abs,y	39	001 110 01
+AND	abs,x	3d	001 111 01
+
+ROL	zp		26	001 001 10
+ROL a		2a	001 010 10
+ROL abs		2e	001 011 10
+ROL	zp,x	36	001 101 10
+ROL	abs,x	3e	001 111 10
+
+
+Any opcode with a final pair of 11 is invalid (there is NO opcides ending
+in a 3 or an F)
+
+Break these apart by the last two bits, you get three groups.
+Base these on the three previous bits, and you get the following table:
+The table in e6502.c is basesd on this.
+
+Final pair: 00
+Middle:	Addressing mode
+000		immediate
+001		zp
+010		(no args needed)
+011		absoloute
+100		(displacement; these are branches)
+101		zp, x
+110		(no args neede)
+111		abs, x
+
+Final Pair: 01
+Middle:	addressing mode
+000		(zp,x)
+001		zp
+010		immediate
+011		absoloute
+100		(zp),y
+101		zp,x
+110		abs,y
+111		abs,x
+
+Final Pair: 10
+Middle:	Addressing mode
+000		immediate
+001		zp
+010		(no args needed)
+011		absoloute
+100		(no args needed)
+101		zp,y
+110		(no args needed)
+111		abs,y
+
+Note that the end/middle values are often used, but only in situations where
+the opcide requires no arguments; the transfer register commands, stack
+operations, NOP, etc.  I checked carefully with all the combinations of
+the (no args needed) (there's only 40 of them, and 8 jumps) to be sure that
+this table is correct.

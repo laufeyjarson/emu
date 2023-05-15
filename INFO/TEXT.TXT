@@ -1,0 +1,184 @@
+text screen starts at 1024 ($400)
+
+The formula is:
+
+h = htab (1-40)
+v = vtab (1-24)
+
+loc =  (128 * v) + h - (984*int((v-1)/8)) + 895
+
+That's stramge. all right.
+
+the first row of the screen starts at 1024 and goes to 1063
+
+ 1             1024  -  1063	
+ 2             1152  -  1191	
+ 3             1280  -  1319	
+ 4             1408  -  1447	
+ 5             1536  -  1575	
+ 6             1664  -  1703	
+ 7             1792  -  1831	
+ 8             1920  -  1959	
+ 9             1064  -  1103	
+ 10            1192  -  1231	
+ 11            1320  -  1359	
+ 12            1448  -  1487	
+ 13            1576  -  1615	
+ 14            1704  -  1743	
+ 15            1832  -  1871	
+ 16            1960  -  1999	
+ 17            1104  -  1143	
+ 18            1232  -  1271	
+ 19            1360  -  1399	
+ 20            1488  -  1527	
+ 21            1616  -  1655	
+ 22            1744  -  1783	
+ 23            1872  -  1911	
+ 24            2000  -  2039	
+
+ 
+ Here's a table of offsets from 1024.  Clearer, a little.
+ 
+ 1             0    -  39
+ 2             128  -  167
+ 3             256  -  295
+ 4             384  -  423
+ 5             512  -  551
+ 6             640  -  679
+ 7             768  -  807
+ 8             896  -  935
+ 9             40   -  79
+ 10            168  -  207
+ 11            296  -  335
+ 12            424  -  463
+ 13            552  -  591
+ 14            680  -  719
+ 15            808  -  847
+ 16            936  -  975
+ 17            80   -  119
+ 18            208  -  247
+ 19            336  -  375
+ 20            464  -  503
+ 21            592  -  631
+ 22            720  -  759
+ 23            848  -  887
+ 24            976  -  1015
+
+
+This is too hard, use a damn table for speed,
+
+I've gotten a way to make the row and column from a memory address:
+
+X is always 1-40
+Y is always 1-24
+MEM is always valid.
+
+Note that an invalid memory address for MemToScreen may result in strange
+values.  I don't think that this will ever point to the screen holes.
+
+Here's from X and Y to an address:
+FUNCTION CALCONE (h, v)
+CALCONE = ((128 * v) + h - (984 * INT((v - 1) / 8)) + 895)
+END FUNCTION
+
+Here's from a memory address.  Note that BASIC can't return two values, so
+the column (col) is commented out, but it works.  This is in SCREEN.BAS, and
+works (actually runs) in the QBasic that ships with DOS 5 and later.
+
+FUNCTION MAKEROW (mem)
+REM the screen is stored as eight chunks, we call 0-7.
+REM take the start of the screen (1024), and get an offs onto the
+REM screen and then use the CHUNK of the screen we're on to decode
+REM the LINE we're om
+
+StartOfScreen = 1024
+
+chunk = (INT(mem / 128) - 8)
+
+offs = mem - StartOfScreen
+choffs = chunk * 128
+
+REM part is the offset into the chunk...
+part = offs - choffs
+
+REM third is the third of the screen we are on
+third = INT(part / 40)
+
+REM the row is the third*8 plus the row on that third...
+row = (third * 8) + (chunk + 1)
+
+REM the column is the offset into the part minus the start of the part
+REM col = part - (third * 40)
+REM col = col + 1
+
+MAKEROW = row
+END FUNCTION
+
+Here's those calls in (hopefully screamingly fast) C...
+For true speed, make the * 128 and / 8 into << and >> and make the whole mess
+a macro.  Not needed at this moment.  Again, 1 <= h <= 40 and 1 <= v <= 24.
+If you need zero based things, do new math, or dec and inc around the call.
+We could combine most of CalcXYFromScreen into one huge equation; perhaps the
+compiler would optimize.
+
+Testing reveals that the more readable one is also faster; the compiler optimized
+it better.  I thought it would.
+
+unsigned short CalcScreenFromXY(unsigned short h, unsigned short v)
+{
+	return ((128 * v) + h - (984 * ((unsigned short)((v - 1) / 8))) + 895)
+}
+
+#define StartOfScreen 1024	/* better yet, look this up in ram... */
+
+/*
+ *	Make sure it's ok for us to fill in usRow and usCol...
+ */
+void CalcXYFromScreen(unsigned short *usRow, unsigned short *usCol, unsigned short usMem)
+{
+	register unsigned short usChunk;
+	register unsigned short usOffs;
+	register unsigned short usChOffs;
+	register unsigned short usPart;
+	register unsigned short usThird;
+
+	/* The Chunk of the screen is the interleave id, 0-7 */
+	usChunk = ( ((unsigned short)(usMem / 128)) - 8);
+
+	/* The Offs is the offset from the start of the scree */
+	usOffs = usMem - StartOfScreen;
+
+	/* The ChOffs is the offset in ram of the start of the chunk. */
+	usChOffs = usChunk * 128;
+
+	/* Part is the offset into the chunk... */
+	usPart = usOffs - usChOffs;
+
+	/* Third is the third of the screen we are on */
+	usThird = (unsigned short)(usPart / 40);
+
+	/* The row is the third times 8 (8 rows per third) plus the row on that third... */
+	*usRow = (usThird * 8) + (usChunk + 1);
+
+	/* The column is the offset into the part minus the start of the part */
+	*usCol = (usPart - (usThird * 40)) +1;
+}
+
+/* as I said, this is actually slower. */
+void CalcXYFromScreen(unsigned short *usRow, unsigned short *usCol, unsigned short usMem)
+{
+	/* This is the same as above, but crammed into two giant expressions that I will let
+	   the compiler optimize.  We'll run 10000 of them and see how long each one takes.
+	   The profiler is our pal...   */
+
+	*usRow = (((unsigned short)((usMem - StartOfScreen - 
+			(( ((unsigned short)(usMem / 128)) - 8) * 128)) / 40)) * 8) + 
+			(( ((unsigned short)(usMem / 128)) - 8) + 1);
+
+	/* The column is the offset into the part minus the start of the part */
+	*usCol = ((usMem - StartOfScreen - (( ((unsigned short)(usMem / 128)) - 8) * 128)) - 
+			(((unsigned short)((usMem - StartOfScreen -
+			(( ((unsigned short)(usMem / 128)) - 8) * 128)) / 40)) * 40)) +1;
+}
+
+    

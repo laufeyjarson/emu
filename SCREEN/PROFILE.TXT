@@ -1,0 +1,62 @@
+prep /nologo /om /ft  C:\lou\private\emu\screen\Win32_Pr\speed
+PREP : warning PRF4521: INIT environment variable not defined
+profile /nologo /nc C:\lou\private\emu\screen\Win32_Pr\speed 
+prep /nologo /m C:\lou\private\emu\screen\Win32_Pr\speed
+plist /nologo C:\lou\private\emu\screen\Win32_Pr\speed
+Profile: Function timing, sorted by time
+Date:    Tue Feb 28 23:08:43 1995
+
+
+Program Statistics
+------------------
+    Command line at 1995 Feb 28 23:04: C:\lou\private\emu\screen\Win32_Pr\speed 
+    Total time: 18591.695 millisecond
+    Time outside of functions: 0.384 millisecond
+    Call depth: 10
+    Total functions: 69
+    Total hits: 2000162
+    Function coverage: 43.5%
+    Overhead Calculated 24
+    Overhead Average 24
+
+Module Statistics for speed.exe
+-------------------------------
+    Time in module: 18591.311 millisecond
+    Percent of time in module: 100.0%
+    Functions in module: 69
+    Hits in module: 2000162
+    Module function coverage: 43.5%
+
+        Func         Func+Child          Hit
+        Time   %        Time      %     Count  Function
+-------------------------------------------------------
+    5672.710  30.5     5672.710  30.5  1000000 CalcXYFromScreen2(unsigned short *,unsigned short *,unsigned short) (speed.obj)
+    5199.526  28.0     5199.526  28.0  1000000 CalcXYFromScreen1(unsigned short *,unsigned short *,unsigned short) (speed.obj)
+    3975.300  21.4     9174.827  49.4        1 try1(void) (speed.obj)
+    3698.651  19.9     9371.361  50.4        1 try2(void) (speed.obj)
+      36.929   0.2    18591.311 100.0        1 _mainCRTStartup (crt0.obj)
+       4.232   0.0        4.232   0.0       28 __heap_search (heapsrch.obj)
+       1.149   0.0        1.149   0.0        1 __heap_grow_emptylist (heapinit.obj)
+       0.906   0.0        0.906   0.0        1 __ioinit (ioinit.obj)
+       0.417   0.0        6.547   0.0       26 __nh_malloc (malloc.obj)
+       0.308   0.0        0.796   0.0        1 __setenvp (stdenvp.obj)
+       0.267   0.0        1.431   0.0        1 __heap_addblock (heapadd.obj)
+       0.264   0.0        6.418   0.0        1 __setargv (stdargv.obj)
+       0.249   0.0        1.680   0.0        1 __heap_grow_region (heapgrow.obj)
+       0.144   0.0        1.824   0.0        1 __heap_new_region (heapgrow.obj)
+       0.054   0.0        0.054   0.0        2 _parse_cmdline (stdargv.obj)
+       0.042   0.0        6.589   0.0       26 _malloc (malloc.obj)
+       0.037   0.0        1.861   0.0        1 __heap_grow (heapgrow.obj)
+       0.032   0.0        1.181   0.0       29 ___getempty (heapinit.obj)
+       0.030   0.0        0.036   0.0        1 __setmbcp (mbctype.obj)
+       0.017   0.0        0.039   0.0       26 __heap_split_block (malloc.obj)
+       0.008   0.0        0.008   0.0        4 __initterm (crt0dat.obj)
+       0.008   0.0    18546.195  99.8        1 _main (speed.obj)
+       0.006   0.0        0.010   0.0        1 __cinit (crt0dat.obj)
+       0.006   0.0        0.010   0.0        1 _doexit (crt0dat.obj)
+       0.006   0.0        0.006   0.0        1 _getSystemCP (mbctype.obj)
+       0.004   0.0        0.004   0.0        1 __before (heapadd.obj)
+       0.004   0.0        0.004   0.0        1 __heap_init (heapinit.obj)
+       0.003   0.0        0.039   0.0        1 ___initmbctable (mbctype.obj)
+       0.003   0.0        0.013   0.0        1 _exit (crt0dat.obj)
+       0.001   0.0        0.001   0.0        1 __heap_findaddr (findaddr.obj)

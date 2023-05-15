@@ -1,0 +1,28 @@
+[Apple // Emulator STT System Status File]
+
+Begin registers:
+Program Counter: 4CF2
+Accumulator: D4
+X-Register: 3F
+Flags: 84
+Stack Pointer: 38
+System Halted: 3
+Tick Count: BD4FF
+End registers.
+
+Begin data:
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+...
+...
+...
+There will be bunches more of these data lines
+...
+...
+...
+00010203 04050607 08091011 12131415 1617181A 1B1C1D1E 1F20
+End data.
+
+Notice that the file contains no Y-Register, so it must be zero.
+Note that this file should error.

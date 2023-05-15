@@ -1,0 +1,29 @@
+Known bugs:
+
+Help is not at all even started.
+There is no keyboard equivalent to the Memory Window; you MUST use the mouse.
+There is no dissasembler.
+There is no assembler.
+26 (of 56) instructions are not working yet.
+
+I got 30 instructions in and tested in one solid day's work.  The hardest part
+of that was the memory addressing translation table (see decode.txt and the
+GetSetVal function in e6502.c) (moved to einstr.c)
+
+ADC (Add with Carry) and SBC (SuBtract wuth Carry) are worrying me, as they
+are hard.  I finally figured out the overflow bit, and now may try writing
+code.  It has to suport BCD!  Eek!  I've never done BCD.
+
+The Window Memory Chain is in place for the CPU's use.  The cached part of
+it can show a bug, however.  If the start or end is outside the view area
+of a window, that window dosen't get updated.  With the CPU only able to
+update one byte at a time, this is never a problem.  The Memory Windows can
+get a little strange if load or data entry is done.
+
+RESOLVED ISSUES:
+
+I've got to add an hourglass or "Loading..." or "Saving..." message, as
+saving hangs Windows pretty well.  It is worse under 16-bit.  NT handles
+things better.  This is now fixed, with a cool custom spinner cursor.
+
+

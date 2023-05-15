@@ -1,0 +1,43 @@
+Lo res graphics uses exactly the same memory mapping as the text screen.
+
+Instead of storing one 8 bit character, the screen memory is used to store
+two 4-bit words.  The high and low nibbles are a color value (for 16 colors)
+that is the top and bottom of the block, the high bits being the top of the block.
+
+bits:
+7 6 5 4 3 2 1 0
+x x x x y y y y   = one byte of lores data
+
+1024 is lores (1,1) and (1,2)
+
+color table:
+Nybble: Color; (Red, green, blue)
+0	Black	(0, 0, 0)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+A
+B
+C
+D
+E
+F	White	(255, 255, 255)
+
+We don't need to worry about setting indivudual blocks; the roms will do
+the needed masking, we just need to be able to render them.
+
+Should the text window cope with that, or should there be a lores window that
+uses the same memory area?  The apple was always one or the other or mixed; can
+the text window I've got do that?  (yes; better if I ask it to)  So, we'll add on
+a "text mode display" for each text window; text or lores or mixed.
+
+The latches (that I need to look up) need to get coded in and attached to memory
+chains soon.  (one byte chains, sigh, with strange uses of the hWnd)
+
+I need color values for all the apple // colors - that's easy and fun!

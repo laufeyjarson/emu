@@ -1,0 +1,43 @@
+TODO.TXT
+
+This is a list of things that are left to be done, and thier addidion and
+completion dates.  Dates are now added, because I'm curious.
+
+3-1-95	Started to-do list.  Will be complete when the project is.
+
+3-1-95	Mac platform bug: Memory Windows appear much too wide, and then sizing
+		is awkward at best,  NC_CALCSIZE apparently isn't quite there.
+		A possible soloution is to call MoveWindow with better sizing
+		before we make it visible.
+
+3-1-95	Got the needed stuff for the Video started,  To do video right, we'll
+		need an Apple // Font that gets loaded at startup, and that's a lot
+		of work.  I don't even know how to make one.  The old Win 3.0 SDK
+		shipped with a Bitmap Font Editor, and I'd be happy with that.
+
+3-1-95	Text mode should get in soon.  Should I create a window for each
+		possible mode, then only show the correct windows at any one given
+		time?  Thusly, the Hires, Lores, and text screens would all exist
+		all the time?  Or should I try and create the screen at video switch
+		time?  Video switch is going to be too slow anyhow; better make them
+		all at screen startup time.
+
+		Text1	- 40x24
+		Text2	- 40x24
+		Text3	- 40x24
+		Hires1	- hgr, sizing to show all or part,
+		Hires2	- hgr
+		Lores1	- hgr
+		Lores2	- hgr
+
+		Default to Text1
+		Fill screens to 0's at boot.
+
+		Graphics has a nasty interleave; you don't think that my neat little
+		functions will work for all of the modes, do you?  The interleave
+		looks a lot alike; change the 40's and 3's and things...  hires will
+		have to wait a little while,  I can get text going, though.
+		For now, use the System Fixed Width Font...
+
+3-2-95	Got text and lores mostly in.  They don't refresh on load or save, and they
+		don't have the correct colors, but other than that they look pretty good.

@@ -1,0 +1,18 @@
+I used these reference books along the way.  Each of them was useful in some
+way, or contributed.  I likely consulted many many more.
+
+"6502 Assembly Language Programming"
+by Lance A. Leventhal.  
+(C) 1979 Osbore/McGraw-Hill,
+ISBN 0-931988-27-6
+References: chapter 3, on the specifics of the 6502 and it's memory addressing
+modes.
+
+"Tips Tricks and Techniques/6502 Instructions"
+Compiled by Beagle Bros. Software Inc.
+Chart.#1, included with Double-Take software.
+(C) 1983
+References: The whole back page; a handy and complete guide to 6502
+instructions, in an easier to swallow form than Leventhal.  Less complete,
+as it is a quick-reference table.
+
