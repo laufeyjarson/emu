@@ -23,6 +23,7 @@ void GetSystemFontSizes(short far *width, short far *height);
 void mem_vscroll(HWND hWhd, HWND hCtrl, UINT wCode, int nPos);
 void mem_ldown(HWND hWnd, BOOL fDoubleClick, int x, int y, UINT uiFlags);
 void mem_keydown(HWND hWnd, UINT vk, BOOL fDown, int cRepeat, UINT cFlags);
+void mem_mousewheel(HWND hWnd, int xPos, int yPos, int zDelta, UINT fwKeys);
 
 /* old message fn's */ 
 long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam);
@@ -37,6 +38,8 @@ void mem_addHex(HWND hWnd, int uiControl, unsigned short sStartAt);
 char getHexVal(WCHAR **str);
 void MarkSelection(HWND hWnd, unsigned int uiControl, WCHAR *pBase, WCHAR *pStart, WCHAR *pEnd);
 
+
+#define SB_MOUSEWHEEL SB_ENDSCROLL+2
 
 /*
  *  This is the main window handler for the memory windows that will
@@ -67,6 +70,8 @@ LRESULT CALLBACK EXPORT MemoryWndProc(
         HANDLE_MSG(hWnd, WM_LBUTTONDBLCLK, mem_ldown);
         
         HANDLE_MSG(hWnd, WM_KEYDOWN, mem_keydown);
+
+        HANDLE_MSG(hWnd, WM_MOUSEWHEEL, mem_mousewheel);
         
         case WM_COMMAND:       /* message: command from application menu */
             switch(wParam)
@@ -532,6 +537,11 @@ void mem_vscroll(HWND hWnd, HWND hCtrl, UINT wCode, int nPos)
             iScroll = iRows;
             break;
 
+        /* Custom additions, senaky me */
+        case SB_MOUSEWHEEL:
+            iScroll = nPos;
+            break;
+
         /* Scrolling is too slow, so just update the title,
            so they know where they are going to scroll to.  */
         case SB_THUMBTRACK:
@@ -606,6 +616,18 @@ void mem_vscroll(HWND hWnd, HWND hCtrl, UINT wCode, int nPos)
     return;
 }   
 
+/*
+ *  Handle the scroll wheel up and down messages by translating them
+ *  to vscroll calls
+ */
+void mem_mousewheel(HWND hWnd, int xPos, int yPos, int zDelta, UINT fwKeys)
+{
+    int clicks = zDelta / WHEEL_DELTA;
+    dPrintf(L"Scrolling %d clicks which was %d\r\n", clicks, zDelta);
+    if (clicks != 0) {
+        mem_vscroll(hWnd, NULL, SB_MOUSEWHEEL, clicks*-1);
+    }
+}
 
 /*
  *  Paint the memory window, with current values from system memory,
