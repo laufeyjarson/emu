@@ -13,7 +13,7 @@
 
 
 /* window handle for main window */
-extern HANDLE hInst;               
+extern HINSTANCE hInst;               
 extern HWND hWndMain;
 extern HWND hWndCPU;
 

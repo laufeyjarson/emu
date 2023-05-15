@@ -41,19 +41,20 @@ BOOL CreateCPUWindow(void)
 {
 	if(IsWindow(hWndCPU))
 	{
-		dPrintf("Open an existing CPU Window\r\n");
+		dPrintf(L"Open an existing CPU Window\r\n");
 		SetFocus(hWndCPU); 
 		ShowWindow(hWndCPU, SW_RESTORE);
 		return 1;
 	}
 	else
 	{
-		dPrintf("Create a NEW CPU window\r\n");
+		dPrintf(L"Create a NEW CPU window\r\n");
 //		dpCpuProc = MakeProcInstance((FARPROC)CpuWndProc, hInst);
 		dpCpuProc = (DLGPROC)CpuWndProc;
-		hWndCPU = CreateDialog(hInst, "CPU_DLG", NULL, dpCpuProc);
+		hWndCPU = CreateDialog(hInst, L"CPU_DLG", NULL, dpCpuProc);
 		hMemIcon = LoadIcon(hInst, MAKEINTRESOURCE(CPU_ICON));
 	}
+	return 1;
 }
 
 //
@@ -100,9 +101,9 @@ LPARAM lParam;
 		else
 			fIcon = 0;
 		if(fIcon)
-			dPrintf("we are minimized now\r\n");
+			dPrintf(L"we are minimized now\r\n");
 		else
-			dPrintf("we are not minimized now\r\n");
+			dPrintf(L"we are not minimized now\r\n");
 
 		UpdateWindow(hWnd);
 		break;	
@@ -138,7 +139,7 @@ void cpu_command(HWND hWnd, int id, HWND hWndCtl, UINT uiNotify)
 	switch(id)
 	{
 		case IDHELP:	// get help for the CPU window
-        DialogBox(hInst, "NotDone", hWnd, NotDone);
+        DialogBox(hInst, L"NotDone", hWnd, NotDone);
         return;
             
         case IDB_HALT: // halt the 6502
@@ -244,14 +245,14 @@ void cpu_command(HWND hWnd, int id, HWND hWndCtl, UINT uiNotify)
  */
 short cpu_getCurrentFlags(HWND hWnd)
 {
-	char szTemp[21];
-	char *stop;
+	WCHAR szTemp[21];
+	WCHAR *stop;
 	long tempVal;
 	short flags;
 
 	/* load and conver the current window contents to a number */
 	GetDlgItemText(hWnd, IDC_HEXVAL, szTemp,	20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
 		tempVal = 0xff;
@@ -265,7 +266,7 @@ short cpu_getCurrentFlags(HWND hWnd)
  */
 void cpu_toggle(HWND hWnd, int id, short byte)
 {
-	char szTemp[21];
+	WCHAR szTemp[21];
 	short flags;
 	
 	flags = cpu_getCurrentFlags(hWnd);
@@ -284,7 +285,7 @@ void cpu_toggle(HWND hWnd, int id, short byte)
 	}
 
 	/* set hex field */
-	wsprintf(szTemp, "%02x", flags);
+	wsprintf(szTemp, L"%02x", flags);
 	SetDlgItemText(hWnd, IDC_HEXVAL, szTemp);
 
 }
@@ -321,25 +322,25 @@ void SetDlgValues(HWND hWnd)
 //
 void LoadDlgValues(HWND hWnd)
 {
-	char szTemp[21];
+	WCHAR szTemp[21];
 
 	/* set all the text fields */
-	wsprintf(szTemp, "%02x", r.s);
+	wsprintf(szTemp, L"%02x", r.s);
 	SetDlgItemText(hWnd, IDC_HEXVAL, szTemp);
 	
-	wsprintf(szTemp, "%02x", r.a);
+	wsprintf(szTemp, L"%02x", r.a);
 	SetDlgItemText(hWnd, IDC_EDITA, szTemp);
 	
-	wsprintf(szTemp, "%02x", r.x);
+	wsprintf(szTemp, L"%02x", r.x);
 	SetDlgItemText(hWnd, IDC_EDITX, szTemp);
 	
-	wsprintf(szTemp, "%02x", r.y);
+	wsprintf(szTemp, L"%02x", r.y);
 	SetDlgItemText(hWnd, IDC_EDITY, szTemp);
 	
-	wsprintf(szTemp, "%02x", r.pc);
+	wsprintf(szTemp, L"%02x", r.pc);
 	SetDlgItemText(hWnd, IDC_EDITIP, szTemp);
 	
-	wsprintf(szTemp, "%02x", r.sp);
+	wsprintf(szTemp, L"%02x", r.sp);
 	SetDlgItemText(hWnd, IDC_EDITSP, szTemp);
 
 	cpu_setFlags(hWnd, r.s);
@@ -367,10 +368,10 @@ void cpu_setFlags(HWND hWnd, short compare)
 //
 void ClearDlgValues(HWND hWnd)
 {
-	char szTemp[21];
+	WCHAR szTemp[21];
 
 	/* set all the text fields */
-	wsprintf(szTemp, "--", r.s);
+	wsprintf(szTemp, L"--", r.s);
 	
 	SetDlgItemText(hWnd, IDC_HEXVAL, szTemp);
 	SetDlgItemText(hWnd, IDC_EDITA, szTemp);
@@ -413,55 +414,55 @@ void SetDialogButtons(HWND hWnd, int run)
 //
 void InstallDlgValues(HWND hWnd)
 {
-	char szTemp[21];
-	char *stop;
+	WCHAR szTemp[21];
+	WCHAR *stop;
 	long tempVal;
 
 	GetDlgItemText(hWnd, IDC_HEXVAL, szTemp,	20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
-		MessageBox(hWnd, "Warning: Flags value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: Flags value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.s = (char)tempVal;
 	
 	GetDlgItemText(hWnd, IDC_EDITA, szTemp,		20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
-		MessageBox(hWnd, "Warning: Accumulator value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: Accumulator value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.a = (char)tempVal;
 
 	GetDlgItemText(hWnd, IDC_EDITX, szTemp,		20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
-		MessageBox(hWnd, "Warning: X register value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: X register value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.x = (char)tempVal;
 
 	GetDlgItemText(hWnd, IDC_EDITY, szTemp,		20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
-		MessageBox(hWnd, "Warning: Y register value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: Y register value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.y = (char)tempVal;
 
 	GetDlgItemText(hWnd, IDC_EDITIP, szTemp,	20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xffff)
 	{
-		MessageBox(hWnd, "Warning: IP value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: IP value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.pc = (short)tempVal;
 
 	GetDlgItemText(hWnd, IDC_EDITSP, szTemp,	20);
-	tempVal = strtol(szTemp, &stop, 16);
+	tempVal = wcstol(szTemp, &stop, 16);
 	if(tempVal > 0xff)
 	{
-		MessageBox(hWnd, "Warning: SP value too large, truncating.", "6502 CPU", MB_OK);
+		MessageBox(hWnd, L"Warning: SP value too large, truncating.", L"6502 CPU", MB_OK);
 	}
 	r.sp = (char)tempVal;
 }

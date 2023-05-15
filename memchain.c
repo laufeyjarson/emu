@@ -25,7 +25,7 @@
 // This will likely change to an array of paragraphs, but that's later when
 // I get the extended 80 col card in.
 HANDLE hMemory;
-char far * lpMemory;
+BYTE * lpMemory;
 
 #ifdef _DEBUG
 unsigned short usMemCount = 0;
@@ -54,13 +54,13 @@ void UpdateMemChain(unsigned short usStart, unsigned short usEnd, BOOL fForce);
  */
 BOOL InitMemory(void)
 {
-    unsigned char far *lpInit;
+    BYTE *lpInit;
     unsigned short i;
     
     hMemory = GlobalAlloc(GHND, (DWORD)(65536));
     if(hMemory == NULL)
         return 0;
-    lpMemory = GlobalLock(hMemory);
+    lpMemory = (char *)GlobalLock(hMemory);
     
     lpInit = lpMemory;
     for(i = 0; i < 0xffff; i++)
@@ -96,8 +96,8 @@ BOOL FreeMemory(void)
     GlobalFree(hMemory);
 
 #ifdef _DEBUG
-    dPrintf("Memory cleared, %d locks.\r\n", usMemCount);
-    dPrintf("chains left: %d\r\n", usChainCount);
+    dPrintf(L"Memory cleared, %d locks.\r\n", usMemCount);
+    dPrintf(L"chains left: %d\r\n", usChainCount);
 #endif
     
     return 1;
@@ -190,7 +190,7 @@ unsigned char INLINE GetRam(unsigned short usAddr)
 /*
  *  Set a value into the system memory
  */
-unsigned char INLINE SetRam(unsigned short usAddr, unsigned char ucVal)
+unsigned char INLINE SetRam(unsigned short usAddr, BYTE ucVal)
 {
     *(lpMemory+usAddr) = ucVal;
     UpdateMemChain(usAddr, usAddr, 0);
@@ -311,7 +311,7 @@ short JoinMemChain(HWND hWnd, unsigned short usStart, unsigned short usEnd)
     pNew = (struct sMemChain *)GlobalAllocPtr(GHND, sizeof(struct sMemChain));
     if(pNew == NULL)
     {
-        dPrintf("Cannot allocate new chain!\r\n");
+        dPrintf(L"Cannot allocate new chain!\r\n");
         return 1;
     }
 #ifdef _DEBUG
@@ -373,7 +373,7 @@ short QuitMemChain(HWND hWnd)
         {
             if(pHeld == NULL)
             {
-                dPrintf("can't delete null list!\r\n");
+                dPrintf(L"can't delete null list!\r\n");
             }
             else
             {
@@ -389,5 +389,6 @@ short QuitMemChain(HWND hWnd)
         /* save previous */
         pHeld = pCurrent;
     }
+    return 1;
 }
 

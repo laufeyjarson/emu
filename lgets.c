@@ -15,6 +15,15 @@
 	or until the number of characters read is equal to n-1, whichever comes
 	first. The result is stored in string, and a null character ('\0') is
 	appended. The newline character, if read, is included in the string.
+
+	Note that this program expects to read and write pure ASCII files.
+	As the contents are constrained to something that should never contain
+	extended characters, this should not be a problem.  The program will
+	refuse to read a file with a BOM.
+
+	This is mostly because I'm too lazy to handle all the translations
+	from the different BOM to the internal type.  All the files remain
+	ASCII.
 	
 	Return Value
 	
@@ -25,28 +34,35 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strsafe.h>
 
-char *lgets( char *string, unsigned int n, HFILE hFile)
+static WCHAR _wcBuff[4096];
+static char _cBuff[4096];
+
+LPWSTR lgets( LPWSTR string, unsigned int n, HANDLE hFile )
 {
 	long curPos;
 	unsigned int ui;
+
+	if (n > sizeof(_cBuff))
+		n = (unsigned int)sizeof(_cBuff);
 	
-	curPos = _llseek(hFile, 0, 1);	// get the current posisiton
-	if(_lread(hFile, string, n-1) == HFILE_ERROR)
+	curPos = SetFilePointer(hFile, 0, NULL, 1);	// get the current posisiton
+	if(!ReadFile(hFile, (LPVOID)_cBuff, n-1, NULL, NULL))
 	{								// read a hunk of string
 		return NULL;
 	}
 
-	string[n] = '\0';				// null terminate string
+	_cBuff[n] = '\0';				// null terminate _cBuff
 
-	for(ui = 0; string[ui] != '\0' && string[ui] != '\n'; ui++)
+	for(ui = 0; _cBuff[ui] != '\0' && _cBuff[ui] != '\n'; ui++)
 		;							// count bytes that we are keeping
 
-	if(string[ui] == '\n')			// keep the newline
+	if(_cBuff[ui] == '\n')			// keep the newline
 	{
-		if(string[ui-1] == '\r')
+		if(_cBuff[ui-1] == '\r')
 		{
-			string[ui-1] = '\n';
+			_cBuff[ui-1] = '\n';
 		}
 		else if(ui+1 < n)
 		{
@@ -54,49 +70,44 @@ char *lgets( char *string, unsigned int n, HFILE hFile)
 		}
 	}
 
-	string[ui] = '\0';				// null terminate at \r
+	_cBuff[ui] = '\0';				// null terminate at \r
+	SetFilePointer(hFile, curPos + ui + 1, NULL, 0);	// seek to the next byte
 
-	_llseek(hFile, curPos + ui +1, 0);	// seek to the next byte
+	MultiByteToWideChar(CP_ACP, 0, _cBuff, ui+1, string, n);
 	return string;
 }
 
 /*
  fputs w/cr 
  */
-UINT lputscr(char *szFoo, HFILE hFile)
+UINT lputscr(WCHAR *szFoo, HANDLE hFile)
 {
-	UINT uiErr, uiErr2;
-	uiErr = _lwrite(hFile, szFoo, strlen(szFoo));
-	if(uiErr == HFILE_ERROR)
-		return uiErr;
-	uiErr2 = _lwrite(hFile, "\r\n", 2);
-	if(uiErr2 == HFILE_ERROR)
-		return uiErr2;
-
-	return uiErr+uiErr2;
+	lprintf(hFile, "%s\r\n");
+	return 0;
 }
 
 /* fputs clone */
-UINT lputs(char *szFoo, HFILE hFile)
+UINT lputs(WCHAR *szFoo, HANDLE hFile)
 {
-	return _lwrite(hFile, szFoo, strlen(szFoo));
+	lprintf(hFile, "%s", szFoo);
+	return 0;
 }
 
-
 /*
- *	lprintf - fpritf knock off
+ *	lprintf - fprintf knock off
  */
-int lprintf(HFILE hf, char *fmt, ...)
+int lprintf(HANDLE hf, const WCHAR *fmt, ...)
 {
 	va_list vlist;
-	static char pBuff[4096];
 	int rtn;
 	
 	// do the printf
 	va_start(vlist, fmt);
-	rtn = wvsprintf(pBuff, fmt, vlist);
+	StringCchVPrintfW(_wcBuff, sizeof(_wcBuff), fmt, vlist);
 	va_end(vlist);
 	
-	_lwrite(hf, pBuff, rtn);
+	WideCharToMultiByte(CP_ACP, 0, _wcBuff, -1, _cBuff, sizeof(_cBuff), NULL, NULL);
+	rtn = (int)strlen(_cBuff);
+	WriteFile(hf, _cBuff, rtn, NULL, NULL);
 	return rtn;
 }

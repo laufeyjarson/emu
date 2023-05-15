@@ -18,7 +18,7 @@
 // stupidly this is the processor's registers, out here as a struct.
 struct __reg r;
 
-HANDLE hInst;               // This instance
+HINSTANCE hInst;               // This instance
 HWND hWndMain;              // Main window
 HWND hWndCPU;               // CPU window
 

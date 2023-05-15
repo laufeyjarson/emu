@@ -2,9 +2,9 @@
 	lgets.h
 	prototype lgets
 ****************************************************************************/
-char *lgets( char *string, int n, HFILE hFile);
+char *lgets( PWSTR string, int n, HANDLE hFile);
 
-UINT lputscr(char *szFoo, HFILE hFile);
-UINT lputs(char *szFoo, HFILE hFile);
-int lprintf(HFILE hf, char *fmt, ...);
+UINT lputscr(WCHAR *szFoo, HANDLE hFile);
+UINT lputs(WCHAR *szFoo, HANDLE hFile);
+int lprintf(HANDLE hf, const WCHAR *fmt, ...);
 

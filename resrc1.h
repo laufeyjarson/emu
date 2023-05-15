@@ -31,7 +31,6 @@
 #define IDC_SPIN1                       102
 #define ID_HELP_SEARCH                  103
 #define APP_ICON_ID                     103
-#define IDD_STATUS                      103
 #define ID_WINDOW_MEMORY                104
 #define APP_MEM_ID                      104
 #define IDD_CPU                         105

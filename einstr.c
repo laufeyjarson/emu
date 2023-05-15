@@ -131,7 +131,7 @@ unsigned char GetSetVal(unsigned char opcode, unsigned char what, unsigned char 
             break;
 
         case error:
-            dPrintf("opcode %d got into GetSetValues!\r\n", opcode);
+            dPrintf(L"opcode %d got into GetSetValues!\r\n", opcode);
             return 0;
     }
 

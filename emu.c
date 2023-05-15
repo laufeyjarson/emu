@@ -163,17 +163,17 @@ HINSTANCE hInstance;
     /* Fill in window class structure with parameters that describe the       */
     /* main window.                                                           */
 
-    wc.style = CS_BYTEALIGNCLIENT;      /* Class style(s).                    */
-    wc.lpfnWndProc = MainWndProc;       /* Function to retrieve messages for  */
+    wcex.style = CS_BYTEALIGNCLIENT;      /* Class style(s).                    */
+    wcex.lpfnWndProc = MainWndProc;       /* Function to retrieve messages for  */
                                         /* windows of this class.             */
-    wc.cbClsExtra = 0;                  /* No per-class extra data.           */
-    wc.cbWndExtra = 0;                  /* No per-window extra data.          */
-    wc.hInstance = hInstance;           /* Application that owns the class.   */
-    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(APP_ICON_ID));
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.lpszMenuName =  "EmuMenu";   /* Name of menu resource in .RC file. */
-    wc.lpszClassName = "EmuWClass"; /* Name used in call to CreateWindow. */
+    wcex.cbClsExtra = 0;                  /* No per-class extra data.           */
+    wcex.cbWndExtra = 0;                  /* No per-window extra data.          */
+    wcex.hInstance = hInstance;           /* Application that owns the class.   */
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(APP_ICON_ID));
+    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName =  "EmuMenu";   /* Name of menu resource in .RC file. */
+    wcex.lpszClassName = "EmuWClass"; /* Name used in call to CreateWindow. */
 
     /* Register the window class and return success/failure code. */
     if (RegisterClass(&wc) == 0)
@@ -186,17 +186,17 @@ HINSTANCE hInstance;
     /* Fill in window class structure with parameters that describe the       */
     /* memory window.                                                         */
 
-    wc.style = CS_DBLCLKS;                       /* Class style(s).                    */
-    wc.lpfnWndProc = MemoryWndProc;     /* Function to retrieve messages for  */
+    wcex.style = CS_DBLCLKS;                       /* Class style(s).                    */
+    wcex.lpfnWndProc = MemoryWndProc;     /* Function to retrieve messages for  */
                                         /* windows of this class.             */
-    wc.cbClsExtra = 0;                  /* No per-class extra data.           */
-    wc.cbWndExtra = sizeof(HANDLE);     /* a handle to a structure.           */
-    wc.hInstance = hInstance;           /* Application that owns the class.   */
-    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(APP_MEM_ID));
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.lpszMenuName =  NULL;        /* Name of menu resource in .RC file. */
-    wc.lpszClassName = "EmuMemWClass"; /* Name used in call to CreateWindow. */
+    wcex.cbClsExtra = 0;                  /* No per-class extra data.           */
+    wcex.cbWndExtra = sizeof(HANDLE);     /* a handle to a structure.           */
+    wcex.hInstance = hInstance;           /* Application that owns the class.   */
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(APP_MEM_ID));
+    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName =  NULL;        /* Name of menu resource in .RC file. */
+    wcex.lpszClassName = "EmuMemWClass"; /* Name used in call to CreateWindow. */
 
     /* Register the window class and return success/failure code. */
     if (RegisterClass(&wc) == 0)

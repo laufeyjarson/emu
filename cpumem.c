@@ -25,18 +25,18 @@
 
 #include "emu.h" 
 
-BOOL EXPORT CALLBACK GetLoadAt(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-short fileLoadRegs(HFILE hFile, struct __reg FAR *lpRegs);
-short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo);
-short fileGetAByte(char **parse, char *setVal);
-long fileLoadReg(HFILE hFile, short sVal, char *szBackup);
-short seekString(HFILE hFile, char *szSearch, char *buff, short cbBuff);
-void fileGetStr(short sVal, char *buf, short cbBuf, char *backup);
-void fileDoRegisters(HFILE hFile);
-void fileWriteDataBytes(HFILE hFile, SFTYPE FAR *lpFileInfo);
-short cpuSaver(SFTYPE FAR *lpFileInfo);
-short cpuLoader(SFTYPE FAR *lpFileInfo, char zero);
-short cpuLoader(SFTYPE FAR *lpFileInfo, char zero);
+INT_PTR CALLBACK GetLoadAt(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+short fileLoadRegs(HANDLE hFile, struct __reg *lpRegs);
+short readDataLines(HANDLE hFile, char *lpNewMem, SFTYPE *lpFileInfo);
+short fileGetAByte(WCHAR **parse, WCHAR *setVal);
+long fileLoadReg(HANDLE hFile, short sVal, PCWSTR szBackup);
+short seekString(HANDLE hFile, PWSTR szSearch, WCHAR *buff, short cbBuff);
+void fileGetStr(short sVal, LPWSTR buf, short cbBuf, LPCWSTR backup);
+void fileDoRegisters(HANDLE hFile);
+void fileWriteDataBytes(HANDLE hFile, SFTYPE *lpFileInfo);
+short cpuSaver(SFTYPE *lpFileInfo);
+short cpuLoader(SFTYPE *lpFileInfo, char zero);
+short cpuLoader(SFTYPE *lpFileInfo, char zero);
 void SpinCursor(int iStat);
 
 
@@ -54,7 +54,7 @@ void SpinCursor(int iStat);
  *                  and the complete register table, including meta-registers.
  *                  This is a complete system save/restore.
  */
-short cpuSaveFile(SFTYPE FAR *lpFileInfo)
+short cpuSaveFile(SFTYPE *lpFileInfo)
 {
 	short sRet;
 
@@ -64,20 +64,21 @@ short cpuSaveFile(SFTYPE FAR *lpFileInfo)
  	return sRet;
 }
 
-short cpuSaver(SFTYPE FAR *lpFileInfo)
+short cpuSaver(SFTYPE *lpFileInfo)
 {
-    char szBuf[128];
-    HFILE hFile;
+    WCHAR szBuf[128];
+    DWORD bytesWritten;
+    HANDLE hFile;
 
 	SpinCursor(SPIN_SPIN);
 
-    if(access(lpFileInfo->szName, 0) == 0)
+    if(_waccess(lpFileInfo->szName, 0) == 0)
     {
-        unlink(lpFileInfo->szName);
+        _wunlink(lpFileInfo->szName);
     }
-    if((hFile = _lcreat(lpFileInfo->szName, 0)) == HFILE_ERROR)
+    if((hFile = CreateFile(lpFileInfo->szName, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
     {
-        MessageBox(hWndMain, "Cannot open file.", "Error", MB_OK);
+        MessageBoxW(hWndMain, L"Cannot open file.", L"Error", MB_OK);
         return 1;
     }
 
@@ -86,19 +87,19 @@ short cpuSaver(SFTYPE FAR *lpFileInfo)
     switch(lpFileInfo->fileType)
     {
         case sttFile:
-        fileGetStr(IDS_STTHDR, szBuf, 128, "[Apple // Emulator STT System Status File]");
-        lprintf(hFile, "%s\r\n\r\n", szBuf);
+        fileGetStr(IDS_STTHDR, szBuf, 128, L"[Apple // Emulator STT System Status File]");
+        lprintf(hFile, L"%s\r\n\r\n", szBuf);
         fileDoRegisters(hFile);
         fileWriteDataBytes(hFile, lpFileInfo);
         break;
 
         case memFile:
-        fileGetStr(IDS_MEMHDR, szBuf, 128, "[Apple // Emulator MEM Memory Image File]");
-        lprintf(hFile, "%s\r\n\r\n", szBuf);
-        fileGetStr(IDS_START, szBuf, 128, "Starting at:");
-        lprintf(hFile, "%s %04X\r\n", szBuf, lpFileInfo->usMemStart);
-        fileGetStr(IDS_LENGTH, szBuf, 128, "Length:");
-        lprintf(hFile, "%s %04X\r\n\r\n", szBuf, (lpFileInfo->usMemEnd-lpFileInfo->usMemStart));
+        fileGetStr(IDS_MEMHDR, szBuf, 128, L"[Apple // Emulator MEM Memory Image File]");
+        lprintf(hFile, L"%s\r\n\r\n", szBuf);
+        fileGetStr(IDS_START, szBuf, 128, L"Starting at:");
+        lprintf(hFile, L"%s %04X\r\n", szBuf, lpFileInfo->usMemStart);
+        fileGetStr(IDS_LENGTH, szBuf, 128, L"Length:");
+        lprintf(hFile, L"%s %04X\r\n\r\n", szBuf, (lpFileInfo->usMemEnd-lpFileInfo->usMemStart));
         fileWriteDataBytes(hFile, lpFileInfo);
         break;
 
@@ -112,12 +113,12 @@ short cpuSaver(SFTYPE FAR *lpFileInfo)
 				SpinCursor(SPIN_SPIN);
 
                 ucVal = GetRam((unsigned short)lLoop);
-                _lwrite(hFile, &ucVal, sizeof(unsigned char));
+                WriteFile(hFile, (LPCVOID) & ucVal, sizeof(unsigned char), &bytesWritten, NULL);
             }
         }
     }
 
-    _lclose(hFile);
+    CloseHandle(hFile);
     return 0;
 }
 
@@ -127,81 +128,81 @@ short cpuSaver(SFTYPE FAR *lpFileInfo)
  *
  *  write the register statuses
  */
-void fileDoRegisters(HFILE hFile)
+void fileDoRegisters(HANDLE hFile)
 {
-    char szBuf[128];
+    WCHAR szBuf[128];
 
 	SpinCursor(SPIN_SPIN);
 
-    fileGetStr(IDS_BEGINREG, szBuf, 128, "Begin registers:");
-    lprintf(hFile, "%s\r\n", szBuf);
+    fileGetStr(IDS_BEGINREG, szBuf, 128, L"Begin registers:");
+    lprintf(hFile, L"%s\r\n", szBuf);
 
     if(r.pc != 0)
     {
-        fileGetStr(IDS_PCREG,  szBuf, 128, "Program Counter:");
-        lprintf(hFile, "%s %04X\r\n", szBuf, r.pc);
+        fileGetStr(IDS_PCREG,  szBuf, 128, L"Program Counter:");
+        lprintf(hFile, L"%s %04X\r\n", szBuf, r.pc);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.a != 0)
     {
-        fileGetStr(IDS_AREG,  szBuf, 128, "Accumulator:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.a);
+        fileGetStr(IDS_AREG,  szBuf, 128, L"Accumulator:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.a);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.x != 0)
     {
-        fileGetStr(IDS_XREG,  szBuf, 128, "X-Register:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.x);
+        fileGetStr(IDS_XREG,  szBuf, 128, L"X-Register:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.x);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.y != 0)
     {
-        fileGetStr(IDS_YREG,  szBuf, 128, "Y-Register:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.y);
+        fileGetStr(IDS_YREG,  szBuf, 128, L"Y-Register:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.y);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.s != 0)
     {
-        fileGetStr(IDS_FLAGREG,  szBuf, 128, "Flags:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.s);
+        fileGetStr(IDS_FLAGREG,  szBuf, 128, L"Flags:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.s);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.sp != 0)
     {
-        fileGetStr(IDS_SPREG,  szBuf, 128, "Stack Pointer:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.sp);
+        fileGetStr(IDS_SPREG,  szBuf, 128, L"Stack Pointer:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.sp);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.halt != 0)
     {
-        fileGetStr(IDS_HALTREG,  szBuf, 128, "System Halted:");
-        lprintf(hFile, "%s %02X\r\n", szBuf, r.halt);
+        fileGetStr(IDS_HALTREG,  szBuf, 128, L"System Halted:");
+        lprintf(hFile, L"%s %02X\r\n", szBuf, r.halt);
     }
 
 	SpinCursor(SPIN_SPIN);
 
     if(r.ulTicks != 0L)
     {
-        fileGetStr(IDS_TICKREG,  szBuf, 128, "Tick Count:");
-        lprintf(hFile, "%s %08X\r\n", szBuf, r.ulTicks);
+        fileGetStr(IDS_TICKREG,  szBuf, 128, L"Tick Count:");
+        lprintf(hFile, L"%s %08X\r\n", szBuf, r.ulTicks);
     }
 
 	SpinCursor(SPIN_SPIN);
 
-    fileGetStr(IDS_ENDREG, szBuf, 128, "End registers.");
-    lprintf(hFile, "%s\r\n\r\n", szBuf);
+    fileGetStr(IDS_ENDREG, szBuf, 128, L"End registers.");
+    lprintf(hFile, L"%s\r\n\r\n", szBuf);
 }
 
 
@@ -210,16 +211,16 @@ void fileDoRegisters(HFILE hFile)
  *
  *  write data byte patterns
  */
-void fileWriteDataBytes(HFILE hFile, SFTYPE FAR *lpFileInfo)
+void fileWriteDataBytes(HANDLE hFile, SFTYPE *lpFileInfo)
 {
     long lCurr;
     short sCol;
     long lLine;
-    char szBuf[129];
+    WCHAR szBuf[129];
     unsigned char ucVal;
 
-    fileGetStr(IDS_BEGINDATA, szBuf, 128, "Begin data:");
-    lprintf(hFile, "%s\r\n", szBuf);
+    fileGetStr(IDS_BEGINDATA, szBuf, 128, L"Begin data:");
+    lprintf(hFile, L"%s\r\n", szBuf);
 
     sCol = 0;
     lLine = 0;
@@ -229,7 +230,7 @@ void fileWriteDataBytes(HFILE hFile, SFTYPE FAR *lpFileInfo)
     {
 		SpinCursor(SPIN_SPIN);
         ucVal = (unsigned char) GetRam((unsigned short)lCurr);
-        lprintf(hFile, "%02X", ucVal);
+        lprintf(hFile, L"%02X", ucVal);
         sCol++;
         lCurr++;
         switch(sCol)
@@ -241,25 +242,25 @@ void fileWriteDataBytes(HFILE hFile, SFTYPE FAR *lpFileInfo)
             case 20:
             case 24:
             case 28:
-                lprintf(hFile, " ");
+                lprintf(hFile, L" ");
                 break;
             case 32:
-                lprintf(hFile, "\r\n");
+                lprintf(hFile, L"\r\n");
                 sCol = 0;
                 lLine++;
                 if(lLine == 20)
                 {
                     lLine = 0;
-                    lprintf(hFile, "\r\n");
+                    lprintf(hFile, L"\r\n");
                 }
         }
     }
 
     if(sCol != 0)
-        lprintf(hFile, "\r\n");
+        lprintf(hFile, L"\r\n");
 
-    fileGetStr(IDS_ENDDATA, szBuf, 128, "End data.");
-    lprintf(hFile, "%s\r\n\r\n", szBuf);
+    fileGetStr(IDS_ENDDATA, szBuf, 128, L"End data.");
+    lprintf(hFile, L"%s\r\n\r\n", szBuf);
 }
 
 
@@ -268,7 +269,7 @@ void fileWriteDataBytes(HFILE hFile, SFTYPE FAR *lpFileInfo)
  *
  *  read .stt or .mem file from disk.
  */ 
-short cpuLoadFile(SFTYPE FAR *lpFileInfo, char zero)
+short cpuLoadFile(SFTYPE *lpFileInfo, char zero)
 {
 	short sRet;
 
@@ -278,21 +279,21 @@ short cpuLoadFile(SFTYPE FAR *lpFileInfo, char zero)
 	return sRet;
 }
 
-short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
+short cpuLoader(SFTYPE *lpFileInfo, char zero)
 {
     struct __reg newRegs;
     HANDLE hNewMem;
-    char FAR *lpNewMem;
-    HFILE hFile;
+    char *lpNewMem;
+    HANDLE hFile;
     long lLoop;
     
     hNewMem = GlobalAlloc(GHND, (DWORD)0xFFFF);
     if(hNewMem == NULL)
     {
-        MessageBox(hWndMain, "Cann't allocate load buffer.", "Error", MB_OK);
+        MessageBoxW(hWndMain, L"Can't allocate load buffer.", L"Error", MB_OK);
         return 1;
     }
-    lpNewMem = GlobalLock(hNewMem);
+    lpNewMem = (char *)GlobalLock(hNewMem);
 
 	SpinCursor(SPIN_SPIN);
 
@@ -313,9 +314,9 @@ short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
     
 	SpinCursor(SPIN_SPIN);
 
-    if((hFile = _lopen(lpFileInfo->szName, OF_READ|OF_SHARE_DENY_WRITE)) == HFILE_ERROR )
+    if((hFile = CreateFile(lpFileInfo->szName, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE )
     {
-        MessageBox(hWndMain, "Can't open file.", "Error", MB_OK);
+        MessageBoxW(hWndMain, L"Can't open file.", L"Error", MB_OK);
         GlobalUnlock(hNewMem);
         GlobalFree(hNewMem);
         return 1;
@@ -328,11 +329,11 @@ short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
         case sttFile:
             if(fileLoadRegs(hFile, &newRegs) == 0)
             {
-                if(MessageBox(hWndMain, "No registers section was found, continue?", "Error", MB_YESNO|MB_ICONQUESTION) == IDNO)
+                if(MessageBoxW(hWndMain, L"No registers section was found, continue?", L"Error", MB_YESNO|MB_ICONQUESTION) == IDNO)
                 {
                     GlobalUnlock(hNewMem);
                     GlobalFree(hNewMem);
-                    _lclose(hFile);
+                    CloseHandle(hFile);
                     return 1;
                 }
             }
@@ -341,11 +342,11 @@ short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
         case memFile:
             if(readDataLines(hFile, lpNewMem, lpFileInfo) == 0)
             {
-                if(MessageBox(hWndMain, "A read error occured; continue load?", "Error",  MB_YESNO|MB_ICONQUESTION) == IDNO)
+                if(MessageBoxW(hWndMain, L"A read error occured; continue load?", L"Error",  MB_YESNO|MB_ICONQUESTION) == IDNO)
                 {
                     GlobalUnlock(hNewMem);
                     GlobalFree(hNewMem);
-                    _lclose(hFile);
+                    CloseHandle(hFile);
                     return 1;
                 }
             }
@@ -353,11 +354,11 @@ short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
 
         default:    // read binary bytes into file!
 		SpinCursor(SPIN_SPIN);
-        _lread(hFile, (lpNewMem+lpFileInfo->usMemStart), ((lpFileInfo->usMemEnd - lpFileInfo->usMemStart)+1));
+        ReadFile(hFile, (lpNewMem+lpFileInfo->usMemStart), ((lpFileInfo->usMemEnd - lpFileInfo->usMemStart)+1), NULL, NULL);
         break;
         
     }
-    _lclose(hFile);
+    CloseHandle(hFile);
 
 	SpinCursor(SPIN_SPIN);
 
@@ -384,23 +385,23 @@ short cpuLoader(SFTYPE FAR *lpFileInfo, char zero)
  *
  *  read in data lines from the file, checking for half-nybbles, and short loads.
  */
-short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
+short readDataLines(HANDLE hFile, char *lpNewMem, SFTYPE *lpFileInfo)
 {                                                         
-    char szString[81];
-    char szEnd[81];
-    short cbEnd;
+    WCHAR szString[81];
+    WCHAR szEnd[81];
+    size_t cbEnd;
     long lLoc;
     long lStop;
     short sErr;
-    char bVal;
-    char *parse;
+    WCHAR bVal;
+    WCHAR *parse;
 
 	SpinCursor(SPIN_SPIN);
 
     /* Get the "Begin data:" text */
-    if(LoadString(hInst, IDS_BEGINDATA, szString, sizeof(szString)) == 0)
+    if(LoadStringW(hInst, IDS_BEGINDATA, szString, sizeof(szString)) == 0)
     {
-        wsprintf(szString, "Begin data:");
+        wsprintfW(szString, L"Begin data:");
     }
     if(seekString(hFile, szString, szEnd, sizeof(szEnd)) == FALSE)
     {
@@ -413,13 +414,12 @@ short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
     /* Get the "End data." text */
     if(LoadString(hInst, IDS_ENDDATA, szEnd, sizeof(szString)) == 0)
     {
-        wsprintf(szString, "End data.");
+        wsprintf(szString, L"End data.");
     }
-
 
 	SpinCursor(SPIN_SPIN);
 
-    cbEnd = strlen(szEnd);
+    cbEnd = wcslen(szEnd);
     lLoc = (long)lpFileInfo->usMemStart;
     lStop = (long)lpFileInfo->usMemEnd + 1L;
     
@@ -427,8 +427,8 @@ short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
     {
 		SpinCursor(SPIN_SPIN);
 
-        szString[strlen(szString) - 1] = '\0';
-        if(strncmp(szString, szEnd, cbEnd) == 0)
+        szString[wcslen(szString) - 1] = 0;
+        if(wcsncmp(szString, szEnd, cbEnd) == 0)
         {
             if(lLoc != lStop)
             {
@@ -444,7 +444,7 @@ short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
         {
 			SpinCursor(SPIN_SPIN);
 
-            *(lpNewMem + lLoc) = bVal;
+            *(lpNewMem + lLoc) = (char)bVal;
             lLoc++;
             // if there's too much or an overflow, blow out
             if(lLoc > lStop)
@@ -458,6 +458,7 @@ short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
             return 0;
         }
     }
+    return 1;
 }
 
 
@@ -467,11 +468,11 @@ short readDataLines(HFILE hFile, char *lpNewMem, SFTYPE FAR *lpFileInfo)
  * parse a byte from a string.
  * return 1 is ok byte, return 0 is end of string, return 2 is bad byte
  */
-short fileGetAByte(char **parse, char *setVal)
+short fileGetAByte(WCHAR **parse, WCHAR *setVal)
 {
-    char *first, *last;
+    WCHAR *first, *last;
     long val = 0L;
-    char szByte[3];
+    WCHAR szByte[3];
     char retVal;
 
     /* we need to skip blanks */
@@ -495,7 +496,7 @@ short fileGetAByte(char **parse, char *setVal)
     szByte[2] = '\0';
 
     /* now, read the hex digits */
-    val = strtol(szByte, &last, 16);
+    val = wcstol(szByte, &last, 16);
 
     /* cvt to char, and point back */
     retVal = (char)val;
@@ -512,17 +513,17 @@ short fileGetAByte(char **parse, char *setVal)
  *  This blits through the file repeatedly loading strings.  It'll be a little slower than
  *  it utterly needs to be, but it's robust, an it's simple to code.
  */
-short fileLoadRegs(HFILE hFile, struct __reg FAR *lpRegs)
+short fileLoadRegs(HANDLE hFile, struct __reg *lpRegs)
 {
-    char szString[81];
-    char buff[81];
+    WCHAR szString[81];
+    WCHAR buff[81];
 
     memset(lpRegs, 0, sizeof(struct __reg));
 
     /* Get the "Begin registers:" text */
     if(LoadString(hInst, IDS_BEGINREG, szString, sizeof(szString)) == 0)
     {
-        wsprintf(szString, "Begin registers:");
+        wsprintf(szString, L"Begin registers:");
     }
 
 	SpinCursor(SPIN_SPIN);
@@ -534,27 +535,27 @@ short fileLoadRegs(HFILE hFile, struct __reg FAR *lpRegs)
     }
 
 	SpinCursor(SPIN_SPIN);
-    lpRegs->pc = (unsigned short)fileLoadReg(hFile, IDS_PCREG, "Program Counter:");
+    lpRegs->pc = (unsigned short)fileLoadReg(hFile, IDS_PCREG, L"Program Counter:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->a  = (unsigned char) fileLoadReg(hFile, IDS_AREG,  "Accumulator:");
+    lpRegs->a  = (unsigned char) fileLoadReg(hFile, IDS_AREG,  L"Accumulator:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->x  = (unsigned char) fileLoadReg(hFile, IDS_XREG,  "X-Register");
+    lpRegs->x  = (unsigned char) fileLoadReg(hFile, IDS_XREG,  L"X-Register");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->y  = (unsigned char) fileLoadReg(hFile, IDS_YREG,  "Y-Register:");
+    lpRegs->y  = (unsigned char) fileLoadReg(hFile, IDS_YREG,  L"Y-Register:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->s  = (unsigned char) fileLoadReg(hFile, IDS_FLAGREG,  "Flags:");
+    lpRegs->s  = (unsigned char) fileLoadReg(hFile, IDS_FLAGREG,  L"Flags:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->sp = (unsigned char) fileLoadReg(hFile, IDS_SPREG,  "Stack Pointer:");
+    lpRegs->sp = (unsigned char) fileLoadReg(hFile, IDS_SPREG,  L"Stack Pointer:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->halt=(unsigned char) fileLoadReg(hFile, IDS_HALTREG,  "System Halted:");
+    lpRegs->halt=(unsigned char) fileLoadReg(hFile, IDS_HALTREG,  L"System Halted:");
 	SpinCursor(SPIN_SPIN);
-    lpRegs->ulTicks  = (unsigned long) fileLoadReg(hFile, IDS_TICKREG,  "Tick Count:");
+    lpRegs->ulTicks  = (unsigned long) fileLoadReg(hFile, IDS_TICKREG,  L"Tick Count:");
 	SpinCursor(SPIN_SPIN);
 
     /* Get the "Begin registers:" text */
     if(LoadString(hInst, IDS_ENDREG, szString, sizeof(szString)) == 0)
     {
-        wsprintf(szString, "End registers.");
+        wsprintf(szString, L"End registers.");
     }
     /* verify "end registers"*/ 
 	SpinCursor(SPIN_SPIN);
@@ -562,6 +563,7 @@ short fileLoadRegs(HFILE hFile, struct __reg FAR *lpRegs)
     {
         return 0;
     }
+    return 1;
 }
 
 
@@ -570,7 +572,7 @@ short fileLoadRegs(HFILE hFile, struct __reg FAR *lpRegs)
  *
  *  Load a string resource, w/backup
  */
-void fileGetStr(short sVal, char *buf, short cbBuf, char *backup)
+void fileGetStr(short sVal, LPWSTR buf, short cbBuf, LPCWSTR backup)
 {
     if(LoadString(hInst, sVal, buf, cbBuf) == 0)
     {
@@ -583,11 +585,11 @@ void fileGetStr(short sVal, char *buf, short cbBuf, char *backup)
  *
  *  This is a utility fn that loads a certin string from the file, and gets it's hex value.
  */
-long fileLoadReg(HFILE hFile, short sVal, char *szBackup)
+long fileLoadReg(HANDLE hFile, short sVal, PCWSTR szBackup)
 {
-    char szString[81];
-    char buff[80];
-    char *first, *last;
+    WCHAR szString[81];
+    WCHAR buff[80];
+    WCHAR *first, *last;
     long val = 0L;
 
     /* Get the text */
@@ -599,11 +601,11 @@ long fileLoadReg(HFILE hFile, short sVal, char *szBackup)
     if(seekString(hFile, szString, buff, sizeof(buff)) == TRUE)
     {
         /* we need to skip blanks */
-        first = buff + strlen(szString);
+        first = buff + wcslen(szString);
         while(*first != '\0' && isspace(*first))
             first++;
         /* now, read the hex digits */
-        val = strtol(first, &last, 16);
+        val = wcstol(first, &last, 16);
     }
     return val;
 }
@@ -619,30 +621,30 @@ long fileLoadReg(HFILE hFile, short sVal, char *szBackup)
  *  It returns TRUE if it finds it and buff will contain the complete
  *  line.  If FALSE, buff will be trash.
  */
-short seekString(HFILE hFile, char *szSearch, char *buff, short cbBuff)
+short seekString(HANDLE hFile, PWSTR szSearch, WCHAR *buff, short cbBuff)
 {
-    short cbSearch;
-    char szBegin[81];
+    size_t cbSearch;
+    WCHAR szBegin[81];
 
     /* Get the "Begin Data:" text */
     if(LoadString(hInst, IDS_BEGINDATA, szBegin, sizeof(szBegin)) == 0)
     {
-        wsprintf(szBegin, "Begin data:");
+        wsprintf(szBegin, L"Begin data:");
     }
 
     /* rewind the file */
-    _llseek(hFile, 0, 0);
-    cbSearch = strlen(szSearch);
+    SetFilePointer(hFile, 0, NULL, 0);
+    cbSearch = wcslen(szSearch);
     
     /* scan it for the string */
     while(lgets(buff, cbBuff, hFile) != NULL)
     {
-        buff[strlen(buff) -1] = '\0';
-        if(strncmp(buff, szSearch, cbSearch) == 0)
+        buff[wcslen(buff) -1] = '\0';
+        if(wcsncmp(buff, szSearch, cbSearch) == 0)
         {
             return TRUE;
         }
-        if(strcmp(buff, szBegin) == 0)
+        if(wcscmp(buff, szBegin) == 0)
         {
             return FALSE;
         }   
@@ -655,14 +657,14 @@ short seekString(HFILE hFile, char *szSearch, char *buff, short cbBuff)
  *  can Open new files,
  *
  */
-short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
+short cpuBuildSFTYPE(SFTYPE *lpFileInfo, PWSTR szFileName)
 {
-    HFILE hFile;
-    char szRead[81], szSTThdr[81], szMEMhdr[81];
-    char szStart[41], szLength[41];
+    HANDLE hFile;
+    WCHAR szRead[81], szSTThdr[81], szMEMhdr[81];
+    WCHAR szStart[41], szLength[41];
     char fGotStart = 0, fGotLen = 0;
-    unsigned int cbStart, cbLength;
-    char *first, *last;
+    size_t cbStart, cbLength;
+    WCHAR *first, *last;
     long val;
     short retVal = 1;
     SFTYPE old;
@@ -670,84 +672,84 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
     /* Get the file headers from the app or use the default */
     if(LoadString(hInst, IDS_STTHDR, szSTThdr, sizeof(szSTThdr)) == 0)
     {
-        wsprintf(szSTThdr, "[Apple // Emulator STT System Status File]");
+        wsprintf(szSTThdr, L"[Apple // Emulator STT System Status File]");
     }
     if(LoadString(hInst, IDS_MEMHDR, szMEMhdr, sizeof(szMEMhdr)) == 0)
     {
-        wsprintf(szSTThdr, "[Apple // Emulator MEM Memory Image File]");
+        wsprintf(szSTThdr, L"[Apple // Emulator MEM Memory Image File]");
     }
 
     /* save old values */
     memcpy(&old, lpFileInfo, sizeof(SFTYPE));
 
-    hFile = _lopen(szFileName, OF_READ|OF_SHARE_DENY_WRITE);
-    if(hFile == HFILE_ERROR)
+    hFile = CreateFile(szFileName, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(hFile == INVALID_HANDLE_VALUE)
         return 1;
         
     /* read the first line from the file, and check it */
     if(lgets(szRead, 80, hFile) == NULL)
     {
         /* if lgets fails, blow*/
-        _lclose(hFile);
+        CloseHandle(hFile);
         return 1;
     }
-    szRead[strlen(szRead) -1] = '\0';   // eat the \n
+    szRead[wcslen(szRead) -1] = '\0';   // eat the \n
     
     /* This is a SYSTEM STATUS file - fill in the rest of the structure */
-    if(strcmpi(szRead, szSTThdr) == 0)
+    if(_wcsicmp(szRead, szSTThdr) == 0)
     {
-        strcpy(lpFileInfo->szName, szFileName);
+        wcscpy(lpFileInfo->szName, szFileName);
         lpFileInfo->fileType = sttFile;
         lpFileInfo->usMemStart = 0x0000;
         lpFileInfo->usMemEnd = 0xFFFF;
-        dPrintf("identified an STT file\r\n");
+        dPrintf(L"identified an STT file\r\n");
         retVal = 0;
     }
     /* This is a MEMORY file - it's harder */
-    else if(strcmpi(szRead, szMEMhdr) == 0)
+    else if(_wcsicmp(szRead, szMEMhdr) == 0)
     {
-        strcpy(lpFileInfo->szName, szFileName);
+        wcscpy(lpFileInfo->szName, szFileName);
         lpFileInfo->fileType = memFile;
         lpFileInfo->usMemStart = 0x0000;
         lpFileInfo->usMemEnd = 0xFFFF;
-        dPrintf("identified a MEM file\r\n");
+        dPrintf(L"identified a MEM file\r\n");
         retVal = 0;
         
         /* Get the file headers from the app or use the default */
         if(LoadString(hInst, IDS_START, szStart, sizeof(szStart)) == 0)
         {
-            wsprintf(szStart, "Starting at:");
+            wsprintf(szStart, L"Starting at:");
         }
         if(LoadString(hInst, IDS_LENGTH, szLength, sizeof(szLength)) == 0)
         {
-            wsprintf(szLength, "Length:");
+            wsprintf(szLength, L"Length:");
         }
 
-        cbStart = strlen(szStart);
-        cbLength = strlen(szLength);
+        cbStart = wcslen(szStart);
+        cbLength = wcslen(szLength);
         /* try and load start and end values */
         while((fGotStart == 0 || fGotLen == 0) && lgets(szRead, 80, hFile) != NULL)
         {
-            szRead[strlen(szRead) -1] = '\0';   // eat the \n
-            if(strncmp(szRead, szStart, cbStart) == 0)
+            szRead[wcslen(szRead) -1] = '\0';   // eat the \n
+            if(wcsncmp(szRead, szStart, cbStart) == 0)
             {
                 /* we need to skip blanks */
                 first = szRead + cbStart;
                 while(*first != '\0' && isspace(*first))
                     first++;
                 /* now, read the hex digits */
-                val = strtol(first, &last, 16);
+                val = wcstol(first, &last, 16);
                 lpFileInfo->usMemStart = (unsigned short)val;   // truncation is ok
                 fGotStart = 1;
             }
-            else if(strncmp(szRead, szLength, cbLength) == 0)
+            else if(wcsncmp(szRead, szLength, cbLength) == 0)
             {
                 /* we need to skip blanks */
                 first = szRead + cbLength;
                 while(*first != '\0' && isspace(*first))
                     first++;
                 /* now, read the hex digits */
-                val = strtol(first, &last, 16);
+                val = wcstol(first, &last, 16);
                 lpFileInfo->usMemEnd = (unsigned short)val; // truncation is ok
                 fGotLen = 1;
             }
@@ -757,11 +759,11 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
     else    /* There is no header - this is a BINARY file of some sort 
                save some defaults */
     {
-        strcpy(lpFileInfo->szName, szFileName);
+        wcscpy(lpFileInfo->szName, szFileName);
         lpFileInfo->fileType = binFile;
-        dPrintf("Identified a BIN file\r\n");
-        _llseek(hFile, 0, 0);   // seek home
-        val = _llseek(hFile, 0, 2); // seek to end
+        dPrintf(L"Identified a BIN file\r\n");
+        SetFilePointer(hFile, 0, NULL, 0);   // seek home
+        val = SetFilePointer(hFile, 0, NULL, 2); // seek to end
 
         if(val == 0xFFFF)   // exactly 64K - likely a previous dump
         {
@@ -771,7 +773,7 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
         }
         else if(val > 0xFFFF)
         {
-            if(MessageBox(NULL, "This binary file is too long; truncate to 64K?", "Error", MB_OKCANCEL|MB_ICONQUESTION) == IDOK)
+            if(MessageBox(NULL, L"This binary file is too long; truncate to 64K?", L"Error", MB_OKCANCEL|MB_ICONQUESTION) == IDOK)
             {
                 lpFileInfo->usMemStart = 0;
                 lpFileInfo->usMemEnd = 0xFFFF;
@@ -782,14 +784,14 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
                 retVal = 1;
             }
         }
-        else    // between 0 anf 64K
+        else    // between 0 and 64K
         {
-            if(DialogBoxParam(hInst, "GETLOADAT", hWndMain, GetLoadAt, (LPARAM)(SFTYPE FAR *)lpFileInfo) == TRUE)
+            if(DialogBoxParam(hInst, L"GETLOADAT", hWndMain, GetLoadAt, (LPARAM)(SFTYPE *)lpFileInfo) == TRUE)
             {
                 // if this is too much, ask what to do.
                 if((long)(lpFileInfo->usMemStart + val) > (0xFFFF))
                 {
-                    if(MessageBox(NULL, "This is greater than 64K; truncate?", "Error", MB_OKCANCEL|MB_ICONQUESTION) == IDOK)
+                    if(MessageBox(NULL, L"This is greater than 64K; truncate?", L"Error", MB_OKCANCEL|MB_ICONQUESTION) == IDOK)
                     {
                         retVal = 0;
                         lpFileInfo->usMemEnd = 0xFFFF;
@@ -813,7 +815,7 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
     }
 
 
-    _lclose(hFile);
+    CloseHandle(hFile);
     if(retVal == 1) // undo changes
         memcpy(lpFileInfo, &old, sizeof(SFTYPE));
     return retVal;
@@ -823,42 +825,42 @@ short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName)
 /*
  *  dlgproc for Get Load At dialog
  */
-BOOL EXPORT CALLBACK GetLoadAt(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK GetLoadAt(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    char *stop;
+    WCHAR *stop;
     long tempVal;
-    char text[80];
-    static SFTYPE FAR *lpsft;
+    WCHAR text[80];
+    static SFTYPE *lpsft;
 
     switch (message)
     {
         case WM_INITDIALOG:            
-            lpsft = (SFTYPE FAR *)lParam;
-            return (TRUE);
+            lpsft = (SFTYPE *)lParam;
+            return (INT_PTR)TRUE;
 
         case WM_COMMAND:               
             if(wParam == IDCANCEL) 
             {
                 EndDialog(hDlg, FALSE); 
-                return (TRUE);
+                return (INT_PTR)TRUE;
             }
             if(wParam == IDOK)
             {
                 GetDlgItemText(hDlg, IDC_STARTADD, text, 80);
-                tempVal = strtol(text, &stop, 16);
+                tempVal = wcstol(text, &stop, 16);
                 if(tempVal > 0xffff)
                 {
-                    MessageBox(hDlg, "Starting address too large", "Error", MB_OK);
+                    MessageBox(hDlg, L"Starting address too large", L"Error", MB_OK);
                     return TRUE;
                 }
                 lpsft->usMemStart = (unsigned short)tempVal;
 
                 EndDialog(hDlg, TRUE);
-                return TRUE;
+                return (INT_PTR)TRUE;
             }
             break;
     }
-    return (FALSE);               
+    return (INT_PTR)FALSE;
 }
 
 void SpinCursor(int iStat)
@@ -871,13 +873,9 @@ void SpinCursor(int iStat)
 	static HCURSOR ahLoaded[MAX_CURS];
 	static unsigned long sulCount;
 
-
-#ifdef _MAC
-#define PASSCOUNT 750
-#else
 #define PASSCOUNT 1500
-#endif
-	switch(iStat)
+
+    switch(iStat)
 	{
 		case SPIN_START:
 			if(iState == SPIN_STOP)
@@ -888,7 +886,7 @@ void SpinCursor(int iStat)
 					ahLoaded[iLoader] = LoadCursor(hInst, MAKEINTRESOURCE(iLoad[iLoader]));
 				}
 			}
-			dPrintf("Loaded cursors...\r\n");
+			dPrintf(L"Loaded cursors...\r\n");
 			sulCount=MAX_CURS-1;
 			iState = SPIN_SPIN;
 			sCount = 0;
@@ -917,7 +915,7 @@ void SpinCursor(int iStat)
 #endif
 			}
 			iState = SPIN_STOP;
-			dPrintf("\nstop spin\r\n");
+			dPrintf(L"\nstop spin\r\n");
 			break;
 	}
 

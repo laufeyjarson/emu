@@ -16,11 +16,11 @@
 enum sfType {memFile, binFile, sttFile};
 
 typedef struct __tagSFType {
-	char szName[255];			// name of file to load/save
+	WCHAR szName[255];			// name of file to load/save
 	enum sfType fileType;		// what we saved
 	unsigned short usMemStart;	// starting location
 	unsigned short usMemEnd;	// ending location
-	char szReadableName[255];	// human readable file name
+	WCHAR szReadableName[255];	// human readable file name
 } SFTYPE;
 
 #define SPIN_START 0

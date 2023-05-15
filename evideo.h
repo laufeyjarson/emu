@@ -43,7 +43,7 @@ static struct stTextVideoTab stTextTab[MAX_TEXT+2] = {
 #define TEXT_WIDTH 8
 #define TEXT_HEIGHT 12
 
-#define GETVIDEOINFO lpVideo = GetWindowPointer(hWnd, 0)
+#define GETVIDEOINFO lpVideo = (struct stTextVideoTab *)GetWindowPointer(hWnd, 0)
 
 #define MAX_LO_COLOR 16
 

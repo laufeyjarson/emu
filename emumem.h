@@ -40,5 +40,5 @@ struct memData
 
 /* cheezy macros to get and set this data for emumem.c's functions. */
 #define FREEINFO GlobalUnlock(hInfo)
-#define GETINFO hInfo=(HANDLE)GetWindowHandle(hWnd, MEM_HDL);lpInfo=(struct memData far *)GlobalLock(hInfo)
+#define GETINFO hInfo=(HANDLE)GetWindowHandle(hWnd, MEM_HDL);lpInfo=(struct memData *)GlobalLock(hInfo)
 

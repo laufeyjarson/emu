@@ -31,7 +31,7 @@
 	Each of the window procs also gets the messages from the Memory Chain
 	Manager to update part or all of the window.
 
-	Note that the 80 column card is NOT currently supportedm but that we're
+	Note that the 80 column card is NOT currently supported, but that we're
 	thinking about it as we write this, so it should be a possible thing to
 	add (although, likely as a software hack, not exactly as Apple did it)
 
@@ -130,12 +130,12 @@ void videoRegisterWndClasses(void)
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName =  NULL;   /* Name of menu resource in .RC file. */
-    wc.lpszClassName = "EmuVTextClass"; /* Name used in call to CreateWindow. */
+    wc.lpszClassName = L"EmuVTextClass"; /* Name used in call to CreateWindow. */
 
     /* Register the window class and return success/failure code. */
     if (RegisterClass(&wc) == 0)
     {
-        MessageBox(NULL, "Cannot create text window class", "Initalization failure",
+        MessageBox(NULL, L"Cannot create text window class", L"Initalization failure",
             MB_ICONASTERISK);
         return;    
     }        
@@ -169,8 +169,8 @@ void videoCreateTextWindows(void)
 
 	for(sDest = 1; sDest <= MAX_TEXT; sDest++)
 	{
-		hwNew = CreateWindow("EmuVTextClass",
-				"Text Window",
+		hwNew = CreateWindow(L"EmuVTextClass",
+				L"Text Window",
 				dwStyle,
 				0,	/* x pos */
 				0,	/* y pos */
@@ -200,7 +200,7 @@ void videoUnRegisterWndClasses(void)
 {
 	int i;
 
-	UnregisterClass("EmuVTextClass", hInst);
+	UnregisterClass(L"EmuVTextClass", hInst);
 	for(i = 0; i < MAX_LO_COLOR; i++)
 	{
 		DeleteObject(gahLoResBrushes[i]);
@@ -254,13 +254,12 @@ LRESULT text_create(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	LPCREATESTRUCT lpcs;
 
-	struct stTextVideoTab FAR *lpVideo;
+	struct stTextVideoTab *lpVideo;
 
 	lpcs = (LPCREATESTRUCT)lParam;
 	SetWindowPointer(hWnd, 0, lpcs->lpCreateParams);
 
 	GETVIDEOINFO;
-
 
 	// also, be real sneaky and tie us into the Memory Chain...
     JoinMemChain(hWnd, (unsigned short)(lpVideo->usStartAt), 
@@ -303,7 +302,7 @@ LRESULT text_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	short x, y;
 	unsigned char ucVal;
 	HFONT hOldF;
-	unsigned short usX, usY;
+	unsigned long usX, usY;
 	unsigned short usTextStart;
 //	static unsigned short usTextStartTab[] = { 0, 20, 25 };
 	static unsigned short usTextStartTab[] = { 25 , 25, 25 };
@@ -322,16 +321,16 @@ LRESULT text_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
 	hOldF = SelectObject(hDC, ghTextFont);
     
     /* calculate the area we are going to paint */
-    min = (ps.rcPaint.top / gsTextHeight) - 1;
+    min = (short)(ps.rcPaint.top / gsTextHeight) - 1;
     if(min < 1) min = 1;
             
-    max = (ps.rcPaint.bottom / gsTextHeight) + 1;
+    max = (short)(ps.rcPaint.bottom / gsTextHeight) + 1;
     if(max > (short)(lpVideo->usYsize))	max = lpVideo->usYsize;
 
-	left = (ps.rcPaint.left / gsTextWidth) - 1;
+	left = (short)(ps.rcPaint.left / gsTextWidth) - 1;
 	if(left < 1) left = 1;
 
-	right = (ps.rcPaint.right / gsTextWidth) + 1;
+	right = (short)(ps.rcPaint.right / gsTextWidth) + 1;
 	if(right > lpVideo->usXsize) right = lpVideo->usXsize;
 	
 
@@ -374,7 +373,7 @@ LRESULT text_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
 			else /* text mode! */
 			{
 				/* render text mode */
-				TextOut(hDC, usX, usY, (LPCSTR)&ucVal, 1);
+				TextOut(hDC, usX, usY, (LPCWSTR)&ucVal, 1);
 			}
 		}
 	}
@@ -450,13 +449,13 @@ void videoCreateFont(void )
 	lgf.lfClipPrecision = 0;
 	lgf.lfQuality = 0;
 	lgf.lfPitchAndFamily = FF_MODERN|FIXED_PITCH;
-	strcpy(lgf.lfFaceName, "Courier New");
+	wcscpy(lgf.lfFaceName, L"Courier New");
 
 
 	ghTextFont = CreateFontIndirect(&lgf);
 	if(ghTextFont == NULL)
 	{
-		MessageBox(hWndMain, "The Apple // Emulator requires Courier New.", "Error", MB_OK);
+		MessageBox(hWndMain, L"The Apple // Emulator requires Courier New.", L"Error", MB_OK);
 		DestroyWindow(hWndMain);
 	}
 

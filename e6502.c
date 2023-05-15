@@ -57,17 +57,17 @@ void Call6502(HWND hWnd)
  */
 void BadInstr(HWND hWnd, unsigned char opcode)
 {
-    char szTemp[80];
+    WCHAR szTemp[80];
 
     // halt the cpu
     SetRegister(halt, HALT);
     
     // show the user
-    wsprintf(szTemp, "Bad opcode 0x%02.02x at 0x%04.04x", opcode, GetRegister(pc));
-    MessageBox(hWnd, szTemp, "Invalid Instruction", MB_OK);
+    wsprintf(szTemp, L"Bad opcode 0x%02.02x at 0x%04.04x", opcode, GetRegister(pc));
+    MessageBox(hWnd, szTemp, L"Invalid Instruction", MB_OK);
 
 #ifdef _DEBUG
-    strcat(szTemp, "\r\n");
+    wcscat(szTemp, L"\r\n");
     
     dPrintf(szTemp);
 #endif    
@@ -295,7 +295,7 @@ void AndByte(HWND hWnd, unsigned char opcode)
  */
 void AddCarry(HWND hWnd, unsigned char opcode)
 {
-    unsigned short dest;
+    unsigned short dest = 0;
     unsigned char val;
     hWnd = hWnd;
 
@@ -408,7 +408,7 @@ void Branch(HWND hWnd, unsigned char opcode)
         break;
 
         default:
-        dPrintf("undefined branch type %d\r\n", type);
+        dPrintf(L"undefined branch type %d\r\n", type);
         break;
     }
 }

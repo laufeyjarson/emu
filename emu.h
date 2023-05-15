@@ -13,38 +13,43 @@
 
 ****************************************************************************/
 
+#pragma once
+
+/* Someday, we'll come back and fix this.  For now, they're annoying errors.  */
+#define _CRT_SECURE_NO_WARNINGS
+
+
 /* Add all of the system headers here - they aren't clean and I like to keep
    the masses of #pargmas all in one place . . . */
 #pragma warning( disable : 4201 4214 4001 )
+
 #include <windows.h>
 #include <windowsx.h>
 #include <commdlg.h>
 
-#ifndef UNDER_CE
-#include <stdio.h>
-#include <direct.h>
-#include <io.h>
-#endif
-
-#include <stdlib.h>
+/* #include <stdlib.h> */
 #include <stdarg.h>
 #include <string.h>
 #include <memory.h>
 #include <ctype.h>
+#include <malloc.h>
+#include <tchar.h>
+#include <io.h>
 
+#include "targetver.h"
 
 
 /* These are local headers, but they are made by sloppy App Studio
    and I can't fix them every time, so they get hidden too */
 #include "resource.h"
-#include "resrc1.h"
+/* #include "resrc1.h" old, let it go */
 #pragma warning( default: 4201 4214 4001 )
 
 /* Our local header files */
 #include "e6502.h"
 #include "emuglob.h"
 #include "emumem.h"
-#include "debug.h"
+#include "emudebug.h"
 #include "cpumem.h"
 #include "lgets.h"
 #include "memchain.h"
@@ -66,33 +71,17 @@
 
 /* macros */
 /* This is a Get/Set WindowHandle macro.  Very useful. */
-#ifdef WIN32
-#define GetWindowHandle(h, o)       (HANDLE)GetWindowLong(h, o)
-#define SetWindowHandle(h, o, v)    SetWindowLong(h, o, (LONG)v)
+#define GetWindowHandle(h, o)       (HANDLE)GetWindowLongPtr(h, o)
+#define SetWindowHandle(h, o, v)    SetWindowLongPtr(h, o, (LONG_PTR)v)
 
-#define GetWindowPointer(h, o)		(LPVOID)GetWindowLong(h, o)
-#define SetWindowPointer(h, o, v)	SetWindowLong(h, o, (LONG)v)
-#else
-#define GetWindowHandle(h, o)       (HANDLE)GetWindowWord(h, o)
-#define SetWindowHandle(h, o, v)    SetWindowWord(h, o, (WORD)v)
-
-#define GetWindowPointer(h, o)		(LPVOID)GetWindowWord(h, o)
-#define SetWindowPointer(h, o, v)	SetWindowWord(h, o, (WORD)v)
-#endif
+#define GetWindowPointer(h, o)		(LPVOID)GetWindowLongPtr(h, o)
+#define SetWindowPointer(h, o, v)	SetWindowLongPtr(h, o, (LONG_PTR)v)
     
 /* Allow INLINE */
-#ifdef WIN32
-#define INLINE
-#else
 #define INLINE __inline
-#endif
 
 /* Allow __export */
-#ifdef WIN32
 #define EXPORT
-#else
-#define EXPORT __export
-#endif
 
 #ifdef OLD
 extern unsigned short GetRegister(unsigned short eReg);
@@ -103,16 +92,15 @@ extern unsigned short GetRegister(unsigned short eReg);
 
 /* Prototypes. */
 /* emu.c */
-extern int PASCAL WinMain(HINSTANCE, HINSTANCE, LPSTR, int);
 extern BOOL InitApplication(HANDLE);
-extern BOOL InitInstance(HANDLE, int);
-extern long CALLBACK EXPORT MainWndProc(HWND, UINT, WPARAM, LPARAM);
-extern BOOL EXPORT CALLBACK About(HWND, unsigned, WPARAM, LPARAM);
-extern BOOL EXPORT CALLBACK NotDone(HWND, unsigned, WPARAM, LPARAM);
+extern BOOL InitInstance(HINSTANCE, int);
+extern LRESULT CALLBACK EXPORT MainWndProc(HWND, UINT, WPARAM, LPARAM);
+extern LRESULT EXPORT CALLBACK About(HWND, unsigned, WPARAM, LPARAM);
+extern LRESULT EXPORT CALLBACK NotDone(HWND, unsigned, WPARAM, LPARAM);
 
 
-/* memory.c */
-extern long CALLBACK EXPORT MemoryWndProc(HWND, UINT, WPARAM, LPARAM);
+/* emumem.c */
+extern LRESULT CALLBACK EXPORT MemoryWndProc(HWND, UINT, WPARAM, LPARAM);
 extern BOOL CreateMemoryWindow(void);
 extern void CloseMemWindows(void);
 
@@ -167,17 +155,17 @@ extern long EXPORT CALLBACK CpuWndProc(HWND, unsigned, WPARAM, LPARAM);
 
 /* emufile.c */
 void FileSaveMenu(HWND hWnd);
-void FileOpenDroppedFile(HWND hWnd, HANDLE hDrop);
+void FileOpenDroppedFile(HWND hWnd, HDROP hDrop);
 void FileSaveAsMenu(HWND hWnd);
 void FileOpenMenu(HWND hWnd);
 void FileCloseMenu(HWND hWnd);
 void FileNewMenu(HWND hWnd);
-UINT EXPORT CALLBACK FileOpenHookProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
+UINT_PTR EXPORT CALLBACK FileOpenHookProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 /* cpumem.c */
 short cpuSaveFile(SFTYPE FAR *lpFileInfo);
 short cpuLoadFile(SFTYPE FAR *lpFileInfo, char zero);
-short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, char *szFileName);
+short cpuBuildSFTYPE(SFTYPE FAR *lpFileInfo, PWSTR szFileName);
 
 /* memchain.c */
 extern BOOL InitMemory(void);
@@ -186,7 +174,7 @@ extern BOOL FreeMemory(void);
 extern BOOL FreeRegisters(void);
 extern unsigned short SetRegister(unsigned short eReg, unsigned short ucVal);
 extern unsigned char GetRam(unsigned short usAddr);
-extern unsigned char SetRam(unsigned short usAddr, unsigned char ucVal);
+extern unsigned char SetRam(unsigned short usAddr, BYTE ucVal);
 extern short JoinMemChain(HWND hWnd, unsigned short usStart, unsigned short usEnd);
 extern short QuitMemChain(HWND hWnd);
 void StartUpdateCache(void);

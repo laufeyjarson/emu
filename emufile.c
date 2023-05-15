@@ -22,7 +22,7 @@ static char fClearMemory = 0;
 void fileUpdateTitle(void);
 void fileBuildOFN(HWND hWnd, char fSave, OPENFILENAME FAR *lpofn);
 int fileGetStartEnd(HWND hWnd);
-BOOL EXPORT CALLBACK fileGetSEDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+UINT_PTR EXPORT CALLBACK fileGetSEDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 
 /*
@@ -56,7 +56,7 @@ void FileSaveAsMenu(HWND hWnd)
 	fileBuildOFN(hWnd, 1, (OPENFILENAME FAR *)&ofn);
 	if (GetOpenFileName(&ofn)) 
 	{
-		strcpy(fileInfo.szName, ofn.lpstrFile);
+		wcscpy(fileInfo.szName, ofn.lpstrFile);
 
 		/* set file type, get start/end info if needed */
 		switch(ofn.nFilterIndex)
@@ -102,7 +102,7 @@ void FileSaveAsMenu(HWND hWnd)
 	{
 #ifdef _DEBUG
 		dwError = CommDlgExtendedError();
-		dPrintf("A commdlg error %ld occurred\r\n", dwError);
+		dPrintf(L"A commdlg error %ld occurred\r\n", dwError);
 #endif		
 		fileUpdateTitle();
 	}
@@ -114,12 +114,9 @@ void FileSaveAsMenu(HWND hWnd)
  */
 
 #ifdef WIN32
-void FileOpenDroppedFile(HWND hWnd, HANDLE hDrop)
+void FileOpenDroppedFile(HWND hWnd, HDROP hDrop)
 {
-#ifndef _MAC
-	char szFile[_MAX_FNAME], szExt[_MAX_EXT];
-#endif
-	char szFileName[256];
+	WCHAR szFileName[256];
 
 	if(fIsFileOpen == 1)
 	{
@@ -178,7 +175,7 @@ void FileOpenMenu(HWND hWnd)
 	{
 #ifdef _DEBUG
 		dwError = CommDlgExtendedError();
-		dPrintf("A commdlg error %ld occurred\r\n", dwError);
+		dPrintf(L"A commdlg error %ld occurred\r\n", dwError);
 #endif		
 		fileUpdateTitle();
 	}
@@ -195,7 +192,7 @@ void FileCloseMenu(HWND hWnd)
 	if(fIsFileOpen == 0)
 		return;
 	
-	iRet = MessageBox(hWnd, "Save changes to file?", "Close File", MB_YESNOCANCEL|MB_ICONQUESTION);
+	iRet = MessageBox(hWnd, L"Save changes to file?", L"Close File", MB_YESNOCANCEL|MB_ICONQUESTION);
 	switch(iRet)
 	{
 		case IDYES:
@@ -227,8 +224,8 @@ void FileNewMenu(HWND hWnd)
 
 	/* Create a brand new .STT file - they are simplest to fake! */
 	fIsFileOpen = 1;
-	strcpy(fileInfo.szName, "UNTITLED.STT");
-	strcpy(fileInfo.szReadableName, "Untitled");
+	wcscpy(fileInfo.szName, L"UNTITLED.STT");
+	wcscpy(fileInfo.szReadableName, L"Untitled");
 	fileInfo.fileType = sttFile;
 	fileInfo.usMemStart = 0;
 	fileInfo.usMemEnd = 0xFFFF;
@@ -242,33 +239,27 @@ void FileNewMenu(HWND hWnd)
  */
 void fileUpdateTitle(void)
 {
-	char szWindowTitle[128];
-#ifndef _MAC
-	char szFile[_MAX_FNAME], szExt[_MAX_EXT];
-#endif
+	WCHAR szWindowTitle[128];
+	WCHAR szFile[_MAX_FNAME], szExt[_MAX_EXT];
 	
 	if(LoadString(hInst, IDS_APPWINDOW, szWindowTitle, sizeof(szWindowTitle)) == 0)
 	{
-		wsprintf(szWindowTitle, "6502 Emulator");
+		wsprintf(szWindowTitle, L"6502 Emulator");
 	}
 
 	if(fIsFileOpen == 1)
 	{
-		strcat(szWindowTitle, " - ");
+		wcscat(szWindowTitle, L" - ");
 
-		if(strlen(fileInfo.szReadableName) == 0)
+		if(wcslen(fileInfo.szReadableName) == 0)
 		{
-#ifdef _MAC
-			strcat(szWindowTitle, "Unknown");
-#else
-			_splitpath(fileInfo.szName, NULL, NULL, szFile, szExt);
-			strcat(szWindowTitle, szFile);
-			strcat(szWindowTitle, szExt);
-#endif
+			_wsplitpath(fileInfo.szName, NULL, NULL, szFile, szExt);
+			wcscat(szWindowTitle, szFile);
+			wcscat(szWindowTitle, szExt);
 		}
 		else
 		{
-			strcat(szWindowTitle, fileInfo.szReadableName);
+			wcscat(szWindowTitle, fileInfo.szReadableName);
 		}
 	}
 	SetWindowText(hWndMain, szWindowTitle);
@@ -281,36 +272,27 @@ void fileUpdateTitle(void)
  */
 void fileBuildOFN(HWND hWnd, char fSave, OPENFILENAME FAR *lpofn)
 {
-	static char szDir[256];
-	static char szFile[256];
-	static char szFileTitle[256];
-	unsigned int ui, cbString;
-	char chReplace;
-	static char szFilter[256];
+	static WCHAR szDir[256];
+	static WCHAR szFile[256];
+	static WCHAR szFileTitle[256];
+	size_t cbString;
+	unsigned int ui;
+	WCHAR chReplace;
+	static WCHAR szFilter[256];
 	
 	/* fill things we can get easily */
-	getcwd(szDir, sizeof(szDir));	// get current directory
+	_wgetcwd(szDir, sizeof(szDir));	// get current directory
 	szFile[0] = '\0';				// no file
 	szFileTitle[0] = '\0';
 	
 	/* load the filter string from the string table */
-#ifdef _MAC
-	if((cbString = LoadString(hInst, IDS_MACMEMFLAGS, szFilter,
-		sizeof(szFilter))) == 0)
-	{
-		/* If the string table breaks, use default */
-		wsprintf(szFilter, "All Files(*.*)|*.*||");
-		cbString = strlen(szFilter);
-	}
-#else
 	if((cbString = LoadString(hInst, IDS_MEMFLAGS, szFilter,
 		sizeof(szFilter))) == 0)
 	{
 		/* If the string table breaks, use default */
-		wsprintf(szFilter, "All Files(*.*)|*.*||");
-		cbString = strlen(szFilter);
+		wsprintf(szFilter, L"All Files(*.*)|*.*||");
+		cbString = wcslen(szFilter);
 	}
-#endif
 
 	/* get null placeholder and replace those with nulls */
 	chReplace = szFilter[cbString -1];
@@ -335,7 +317,7 @@ void fileBuildOFN(HWND hWnd, char fSave, OPENFILENAME FAR *lpofn)
 	if(fSave)
 	{
 		lpofn->Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT;
-		lpofn->lpstrTitle = "Save As...";
+		lpofn->lpstrTitle = L"Save As...";
 	}
 	else	/* open */
 	{
@@ -344,7 +326,7 @@ void fileBuildOFN(HWND hWnd, char fSave, OPENFILENAME FAR *lpofn)
 		fClearMemory = 0;
 		lpofn->Flags = OFN_SHOWHELP | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST |
 						OFN_ENABLEHOOK | OFN_ENABLETEMPLATE;
-		lpofn->lpstrTitle = "Open...";
+		lpofn->lpstrTitle = L"Open...";
 	}
 	lpofn->lpstrFileTitle = fileInfo.szReadableName;
 	lpofn->nMaxFileTitle = sizeof(fileInfo.szReadableName)-1;
@@ -354,7 +336,7 @@ void fileBuildOFN(HWND hWnd, char fSave, OPENFILENAME FAR *lpofn)
 /*
  *	This is the hook fn for the Open dialog to set the Zero Ram flag.
  */
-UINT EXPORT CALLBACK FileOpenHookProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+UINT_PTR EXPORT CALLBACK FileOpenHookProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static OPENFILENAME FAR *lpofn;
     switch(msg) 
@@ -383,14 +365,14 @@ UINT EXPORT CALLBACK FileOpenHookProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
  */
 int fileGetStartEnd(HWND hWnd)
 {
-	return DialogBox(hInst, "GETSTARTEND", hWnd, fileGetSEDlg);
+	return (int)DialogBox(hInst, L"GETSTARTEND", hWnd, fileGetSEDlg);
 }
 
-BOOL EXPORT CALLBACK fileGetSEDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+UINT_PTR EXPORT CALLBACK fileGetSEDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	char *stop;
+	WCHAR *stop;
 	long tempVal;
-	char text[80];
+	WCHAR text[80];
 
     switch (message)
     {
@@ -406,19 +388,19 @@ BOOL EXPORT CALLBACK fileGetSEDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
             if(wParam == IDOK)
             {
             	GetDlgItemText(hDlg, IDC_STARTADD, text, 80);
-				tempVal = strtol(text, &stop, 16);
+				tempVal = wcstol(text, &stop, 16);
 				if(tempVal > 0xffff)
 				{
-					MessageBox(hDlg, "Starting address too large", "Error", MB_OK);
+					MessageBox(hDlg, L"Starting address too large", L"Error", MB_OK);
 					return TRUE;
 				}
 				fileInfo.usMemStart = (unsigned short)tempVal;
 
             	GetDlgItemText(hDlg, IDC_ENDADD, text, 80);
-				tempVal = strtol(text, &stop, 16);
+				tempVal = wcstol(text, &stop, 16);
 				if(tempVal > 0xffff)
 				{
-					MessageBox(hDlg, "Ending address too large", "Error", MB_OK);
+					MessageBox(hDlg, L"Ending address too large", L"Error", MB_OK);
 					return TRUE;
 				}
 				fileInfo.usMemEnd = (unsigned short)tempVal;

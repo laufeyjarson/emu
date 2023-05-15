@@ -34,19 +34,20 @@ long mem_memrefresh(HWND hWnd, WPARAM wParam, LPARAM lParam);
 long EXPORT CALLBACK mem_editProc(HWND hDlg, unsigned int message, WPARAM wParam, LPARAM lParam);
 short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError);
 void mem_addHex(HWND hWnd, int uiControl, unsigned short sStartAt);
-char getHexVal(char **str);
-void MarkSelection(HWND hWnd, unsigned int uiControl, char *pBase, char *pStart, char *pEnd);
+char getHexVal(WCHAR **str);
+void MarkSelection(HWND hWnd, unsigned int uiControl, WCHAR *pBase, WCHAR *pStart, WCHAR *pEnd);
 
 
 /*
  *  This is the main window handler for the memory windows that will
  *  be floating around.
  */
-long CALLBACK EXPORT MemoryWndProc(hWnd, message, wParam, lParam)
-HWND hWnd;                      /* window handle                 */
-UINT message;                   /* type of message               */
-WPARAM wParam;                  /* additional information        */
-LPARAM lParam;                  /* additional information        */
+LRESULT CALLBACK EXPORT MemoryWndProc(
+    HWND hWnd,                      /* window handle                 */
+    UINT message,                   /* type of message               */
+    WPARAM wParam,                  /* additional information        */
+    LPARAM lParam                   /* additional information        */
+)
 {
     HANDLE hInfo;
     struct memData far *lpInfo;
@@ -248,7 +249,7 @@ void mem_ldown(HWND hWnd, BOOL fDoubleClick, int x, int y, UINT uiFlags)
     lByteOn += (long) (lpInfo->sStart + (16 * iRowOn));
 
     lpfnEditProc = (DLGPROC) MakeProcInstance((FARPROC)mem_editProc, hInst);
-    DialogBoxParam(hInst, "EditMemDlg", hWnd, lpfnEditProc, (LPARAM)lByteOn);
+    DialogBoxParam(hInst, L"EditMemDlg", hWnd, lpfnEditProc, (LPARAM)lByteOn);
     FreeProcInstance((FARPROC) lpfnEditProc);
 
     FREEINFO;
@@ -265,14 +266,14 @@ void mem_ldown(HWND hWnd, BOOL fDoubleClick, int x, int y, UINT uiFlags)
 long EXPORT CALLBACK mem_editProc(HWND hDlg, unsigned int message, WPARAM wParam, LPARAM lParam)
 {
     static unsigned short sEditByte;
-    char szTemp[21];
+    WCHAR szTemp[21];
     RECT reParent;
         
     switch (message)
     {
         case WM_INITDIALOG:            /* message: initialize dialog box */
         sEditByte = (unsigned short)lParam;
-        wsprintf(szTemp, "%04X", sEditByte);
+        wsprintf(szTemp, L"%04X", sEditByte);
         SetDlgItemText(hDlg, IDC_LOCATION, szTemp);
         SetFocus(GetDlgItem(hDlg, IDC_EDITMEM));
         return 0;
@@ -301,7 +302,7 @@ long EXPORT CALLBACK mem_editProc(HWND hDlg, unsigned int message, WPARAM wParam
 
 
 #define SIZE_HEX 4095
-static char szHexBuff[SIZE_HEX+1];  /* a handy big buffer */
+static WCHAR szHexBuff[SIZE_HEX+1];  /* a handy big buffer */
 
 /*
  *  Validate Hex values in an edit control are ok
@@ -312,10 +313,10 @@ static char szHexBuff[SIZE_HEX+1];  /* a handy big buffer */
  */
 short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
 {
-    char *pCh;
+    WCHAR *pCh;
     short sCount;
     short fInVal;
-    char *pStart;
+    WCHAR *pStart;
     
     memset(szHexBuff, 0, SIZE_HEX);
     GetDlgItemText(hWnd, uiControl, szHexBuff, SIZE_HEX);
@@ -334,7 +335,7 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
                 if(sCount > 2)  /* if there's too many, blow    */
                 {
                     MessageBeep(MB_ICONEXCLAMATION);
-                    SetDlgItemText(hWnd, uiError, "There are too many digits here");
+                    SetDlgItemText(hWnd, uiError, L"There are too many digits here");
                     MarkSelection(hWnd, uiControl, &(szHexBuff[0]), pStart, pCh);
                     return 0;
                 }
@@ -344,7 +345,7 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
                 if(sCount != 2)     /* if there aren't enough, blow */
                 {
                     MessageBeep(MB_ICONEXCLAMATION);
-                    SetDlgItemText(hWnd, uiError, "There are not enough digits here");
+                    SetDlgItemText(hWnd, uiError, L"There are not enough digits here");
                     MarkSelection(hWnd, uiControl, &(szHexBuff[0]), pStart, pCh);
                     return 0;
                 }
@@ -358,7 +359,7 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
             else    /* This is a bogus digit */
             {
                 MessageBeep(MB_ICONEXCLAMATION);
-                SetDlgItemText(hWnd, uiError, "This is not a hex number");
+                SetDlgItemText(hWnd, uiError, L"This is not a hex number");
                 MarkSelection(hWnd, uiControl, &(szHexBuff[0]), pStart, pCh+1);
                 return 0;
             }
@@ -380,7 +381,7 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
             else            /* bad byres are not ok, ever.  Blow. */
             {
                 MessageBeep(MB_ICONEXCLAMATION);
-                SetDlgItemText(hWnd, uiError, "This is not a hex number");
+                SetDlgItemText(hWnd, uiError, L"This is not a hex number");
                 MarkSelection(hWnd, uiControl, &(szHexBuff[0]), pStart, pCh+1);
                 return 0;
             }
@@ -391,7 +392,7 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
     if(fInVal && sCount != 2)
     {
         MessageBeep(MB_ICONEXCLAMATION);
-        SetDlgItemText(hWnd, uiError, "There are not enough digits here");
+        SetDlgItemText(hWnd, uiError, L"There are not enough digits here");
         MarkSelection(hWnd, uiControl, &(szHexBuff[0]), pStart, pCh);
         return 0;
     }
@@ -404,31 +405,22 @@ short mem_validateHex(HWND hWnd, unsigned int uiControl, unsigned int uiError)
  *
  *  Depends on having a text field, and three pointers.  Has win/win32 specific things.
  */
-void MarkSelection(HWND hWnd, unsigned int uiControl, char *pBase, char *pStart, char *pEnd)
+void MarkSelection(HWND hWnd, unsigned int uiControl, WCHAR *pBase, WCHAR *pStart, WCHAR *pEnd)
 {
-    short sStartOffs;
-    short sEndOffs;
+    long sStartOffs;
+    long sEndOffs;
     
     /* always show to the end of a token or the string */
     while(*pEnd != '\0' && !isspace(*pEnd))
         pEnd++;
 
-    sStartOffs = pStart-pBase;
-    sEndOffs = pEnd-pBase;
+    sStartOffs = (long)(pStart-pBase);
+    sEndOffs = (long)(pEnd-pBase);
     
     SetFocus(GetDlgItem(hWnd, IDC_EDITMEM));
 
-    /* Fairly unpleasant - the EM_SETSEL message changed, and I can't find a message
-       builder that is an equivalent, so I need to do special code for each version.
-       I hate cases like this - I'd have preferred an EM_MARKSELECTION that would
-       gradually replace the EM_SETSEL call - the EM_SETSEL would be old baggage, but
-       would be easy code, and keep this shit from happening.  */
-#ifdef WIN32
     SendDlgItemMessage(hWnd, uiControl, EM_SETSEL, (WPARAM)sStartOffs, (LPARAM)sEndOffs);
     SendDlgItemMessage(hWnd, uiControl, EM_SCROLLCARET, (WPARAM)0, (LPARAM)0);
-#else
-    SendDlgItemMessage(hWnd, uiControl, EM_SETSEL, 1, MAKELONG(sStartOffs, sEndOffs));
-#endif
 }
 
 
@@ -440,7 +432,7 @@ void MarkSelection(HWND hWnd, unsigned int uiControl, char *pBase, char *pStart,
 void mem_addHex(HWND hWnd, int uiControl, unsigned short sStartAt)
 {
     char val;
-    char *pStr;
+    WCHAR *pStr;
     unsigned short sCurr;
 
     memset(szHexBuff, 0, SIZE_HEX);
@@ -470,15 +462,15 @@ void mem_addHex(HWND hWnd, int uiControl, unsigned short sStartAt)
  *  Given a >pointer to< a string, read a hex value from it, and increment the
  *  string over the hex, returning the parsed value.
  */
-char getHexVal(char **str)
+char getHexVal(WCHAR **str)
 {
-    char *stop;
+    WCHAR *stop;
     long tempVal;
 
-    tempVal = strtol(*str, &stop, 16);
+    tempVal = wcstol(*str, &stop, 16);
     if(tempVal > 0xff)
     {
-        MessageBox(NULL, "Warning: value truncated", "6502 Memory", MB_OK);
+        MessageBox(NULL, L"Warning: value truncated", L"6502 Memory", MB_OK);
     }
     *str = stop;    /* advance past what we read! */
 
@@ -501,7 +493,7 @@ void mem_vscroll(HWND hWnd, HWND hCtrl, UINT wCode, int nPos)
     int iRows, iScroll, iCurr, iEnd, iNewCurr;
     int iForceAll = 0;
     RECT rScroll;
-    char szWinTitle[40];
+    WCHAR szWinTitle[40];
     
     /* I don't use this */
     hCtrl = hCtrl;
@@ -543,7 +535,7 @@ void mem_vscroll(HWND hWnd, HWND hCtrl, UINT wCode, int nPos)
         /* Scrolling is too slow, so just update the title,
            so they know where they are going to scroll to.  */
         case SB_THUMBTRACK:
-        wsprintf(szWinTitle, "6502 Memory $%04X", nPos * 16);
+        wsprintf(szWinTitle, L"6502 Memory $%04X", nPos * 16);
         SetWindowText(hWnd, szWinTitle);
         FREEINFO;
         return;
@@ -574,12 +566,11 @@ void mem_vscroll(HWND hWnd, HWND hCtrl, UINT wCode, int nPos)
         return;
     }
 
-
     /* move the thumb, calculate an address, and move the title string */
     SetScrollPos(hWnd, SB_VERT, iNewCurr, TRUE);
     lpInfo->sStart = iNewCurr * 16;
 
-    wsprintf(szWinTitle, "6502 Memory $%04X", lpInfo->sStart);
+    wsprintf(szWinTitle, L"6502 Memory $%04X", lpInfo->sStart);
     SetWindowText(hWnd, szWinTitle);
 
     /* Change the area we are watching */
@@ -626,10 +617,10 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
     HANDLE hInfo;
     struct memData far *lpInfo;
     HDC hDC;
-    short row, min, max, col;
+    int row, min, max, col;
     HGLOBAL hTemp;
-    char far *lpTemp;
-    char szVal[5];
+    WCHAR *lpTemp;
+    WCHAR szVal[5];
     HFONT hSysF, hOldF;
     PAINTSTRUCT ps;
     unsigned char ucVal;
@@ -642,7 +633,7 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
     GETINFO;
 
     /* we need some scratch space; allocste it neatly */
-    hTemp = GlobalAlloc(GHND, MEM_WIDTH+5);
+    hTemp = GlobalAlloc(GHND, (MEM_WIDTH+5)*sizeof(WCHAR));
     if(hTemp == NULL)
     {
         EndPaint(hWnd, &ps);
@@ -677,14 +668,14 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
     for(row = 0; row < max; row++)
     {
         /* Initalize the row header. */
-        wsprintf(lpTemp, "  %04.04X: ", (lpInfo->sStart + (row*16)) );
+        wsprintf(lpTemp, L"  %04.04X: ", (lpInfo->sStart + (row*16)) );
                 
         /* Add on the hex data bytes. */
         for(col = 0; col < 16; col++)
         {                          
             ucVal = GetRam(usOffs);
                     
-            wsprintf(szVal, "%02.02X", ucVal);
+            wsprintf(szVal, L"%02.02X", ucVal);
             lstrcat(lpTemp, szVal);
                     
             /* insert spaces and dashes for readability */
@@ -692,11 +683,11 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 case 3:
                 case 11:
-                    lstrcat(lpTemp, " ");
+                    lstrcat(lpTemp, L" ");
                 break;
                         
                 case 7:
-                    lstrcat(lpTemp, " - ");
+                    lstrcat(lpTemp, L" - ");
                     break;
                             
                 default:
@@ -709,13 +700,13 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
         usOffs -=16;
 
         /* Add the divider */
-        lstrcat(lpTemp, " | ");
+        lstrcat(lpTemp, L" | ");
                 
         /* Add on the ASCII data bytes. */
         for(col = 0; col < 16; col++)
         {
             ucVal = GetRam(usOffs);
-            wsprintf(szVal, "%c", isprint(ucVal) ? ucVal
+            wsprintf(szVal, L"%c", isprint(ucVal) ? ucVal
                 : '.');
             lstrcat(lpTemp, szVal);
                     
@@ -724,11 +715,11 @@ long mem_paint(HWND hWnd, WPARAM wParam, LPARAM lParam)
             {
                 case 3:
                 case 11:
-                    lstrcat(lpTemp, " ");
+                    lstrcat(lpTemp, L" ");
                 break;
                         
                 case 7:
-                    lstrcat(lpTemp, " - ");
+                    lstrcat(lpTemp, L" - ");
                     break;
                             
                 default:
@@ -766,7 +757,7 @@ long mem_create(HWND hWnd, WPARAM wParam, LPARAM lParam)
     HANDLE hInfo;
     struct memData far *lpInfo;
             
-    dPrintf("Create a new memory window\r\n");
+    dPrintf(L"Create a new memory window\r\n");
 
     hInfo = GlobalAlloc(GHND, sizeof(struct memData));
     if(hInfo == NULL)
@@ -905,8 +896,8 @@ BOOL CreateMemoryWindow(void)
     HWND hWnd;
     
     hWnd = CreateWindow(
-        "EmuMemWClass",                 /* See RegisterClass() call.          */
-        "6502 Memory $0000",            /* Text for window title bar.         */
+        L"EmuMemWClass",                 /* See RegisterClass() call.          */
+        L"6502 Memory $0000",            /* Text for window title bar.         */
         WS_THICKFRAME|WS_CAPTION|WS_SYSMENU|WS_VSCROLL|
         WS_MINIMIZEBOX,                 /* Window style.                      */
         CW_USEDEFAULT,                  /* Default horizontal position.       */
@@ -922,7 +913,7 @@ BOOL CreateMemoryWindow(void)
     /* If window could not be created, return "failure" */
     if (!hWnd)
     {
-        MessageBox(NULL, "Cannot create memory window", "Initalization failure",
+        MessageBox(NULL, L"Cannot create memory window", L"Initalization failure",
             MB_ICONASTERISK);
         return 0;    
     }
@@ -948,9 +939,9 @@ void CloseMemWindows(void)
 {
     HWND hWndToClose;
     
-    dPrintf("Close all memory windows\r\n");
+    dPrintf(L"Close all memory windows\r\n");
 
-    while((hWndToClose = FindWindow("EmuMemWClass", NULL)) != NULL)
+    while((hWndToClose = FindWindow(L"EmuMemWClass", NULL)) != NULL)
     {
         DestroyWindow(hWndToClose);
     }
